@@ -1,4 +1,5 @@
 
+import { Link } from 'react-router';
 import Button from './components/Button'
 
 function Home() {
@@ -45,7 +46,7 @@ function Home() {
 
     <div className="mt-6 text-center text-sm text-[#ECF0F1]">
       Don't have an account? 
-      <a href="/register" className="ml-1 font-medium text-[#ECF0F1] underline hover:text-white">Sign up</a>
+      <Link to="/register" className="ml-1 font-medium text-[#ECF0F1] underline hover:text-white">Sign up</Link>
     </div>
   </div>
 </div>
