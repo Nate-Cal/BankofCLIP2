@@ -1,15 +1,15 @@
 import { Link } from "react-router";
-const Button = (props: {
+const LinkButton = (props: {
     color: string;
     text: string;
     txtColor: string;
-    link: string;
+    link?: string;
     className?: string;
 }) => {
     const { color, text, txtColor, link, className } = props;
     return (
         <Link
-            to={link}
+            to={link ?? "/Account"}
             className={className ?? "inline-flex h-16 w-3/4 items-center justify-center rounded-3xl text-xl"}
             style={{ backgroundColor: color, color: txtColor }}
         >
@@ -18,4 +18,4 @@ const Button = (props: {
     );
 }
 
-export default Button;
+export default LinkButton;
