@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bank of CLI</title>
+<style>
+/* ##################################################################
+   SECTION 3 (CSS) - DESIGN SYSTEM & SHARED COMPONENTS
+   Theme colors, fonts, buttons, inputs, cards, spinner, skeletons
+   ################################################################## */
+:root{--bg:#f4f6f5;--card:#fff;--ink:#0e1a16;--mute:#65746e;--line:#e1e7e4;--acc:#0a7d55;--accf:#fff;--bad:#c0392b;--sk:#e6ebe8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1210;--card:#131d19;--ink:#e8f1ed;--mute:#8aa096;--line:#22322c;--acc:#3ddc97;--accf:#06251a;--bad:#ff6b5b;--sk:#1c2a25}}
+:root[data-theme="dark"]{--bg:#0b1210;--card:#131d19;--ink:#e8f1ed;--mute:#8aa096;--line:#22322c;--acc:#3ddc97;--accf:#06251a;--bad:#ff6b5b;--sk:#1c2a25}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.logo{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:1.15rem}
+.logo b{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+.btn{border:0;border-radius:10px;padding:12px 16px;font:600 .95rem inherit;font-family:inherit;background:var(--acc);color:var(--accf);cursor:pointer;width:100%;display:flex;justify-content:center;gap:8px;align-items:center}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);width:auto;padding:8px 12px}
+.btn:disabled{opacity:.6;cursor:wait}
+label{display:block;font-size:.8rem;color:var(--mute);margin:14px 0 6px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.err{color:var(--bad);font-size:.78rem;min-height:1em;margin-top:4px}
+.tabs{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:10px;margin:14px 0}
+.tabs button{flex:1;border:0;background:transparent;color:var(--mute);padding:9px;border-radius:8px;font:600 .85rem inherit;font-family:inherit;cursor:pointer}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px #0002}
+.sk{background:var(--sk);border-radius:8px;height:16px;animation:p 1.2s infinite}
+@keyframes p{50%{opacity:.45}}
+.spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:r .7s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+
+/* ##################################################################
+   SECTION 4 (CSS) - AUTH SCREENS
+   ################################################################## */
+.auth{min-height:80vh;display:grid;place-items:center}
+.auth .card{width:100%;max-width:400px}
+.hint{font-size:.75rem;color:var(--mute);margin-top:12px}
+
+/* ##################################################################
+   SECTION 5 (CSS) - DASHBOARD
+   ################################################################## */
+.bal{background:linear-gradient(135deg,var(--acc),#075c40);color:#fff;border:0}
+.bal .amt{font-size:2.4rem;font-weight:700;margin:6px 0}
+.bal small{opacity:.8}
+.tx{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.tx:last-child{border:0}
+.tx small{color:var(--mute);display:block}
+.pos{color:var(--acc)}.neg{color:var(--bad)}
+
+/* ##################################################################
+   SECTION 7 (CSS) - APP SHELL, LAYOUT, TOASTS, RESPONSIVE
+   ################################################################## */
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}
+.col{display:grid;gap:16px;align-content:start}
+@media(min-width:800px){.grid{grid-template-columns:1.1fr 1fr}} /* phone = 1 column, tablet/desktop = 2 */
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:9;max-width:calc(100% - 32px)}
+.toast{background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:10px;font-size:.9rem;border-left:4px solid var(--acc)}
+.toast.bad{border-color:var(--bad)}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ##################################################################
+   SECTION 1 - CONTRACT & TYPES LEAD
+   The blueprint: what the data looks like. (In React this becomes
+   TypeScript interfaces in a types.ts file.)
+   ##################################################################
+
+ User        { id:string, name:string, email:string }
+ Account     { id:string, ownerId:string, balance:number, currency:"USD" }
+ Transaction { id:string, type:"DEPOSIT"|"WITHDRAW"|"TRANSFER", amount:number, date:ISOString, description:string }
+ ApiResult<T>{ ok:boolean, data?:T, error?:{ code:string, message:string } }
+
+ POST /auth/login {email,password}         -> ApiResult<User>
+ GET  /accounts/me                         -> ApiResult<Account>
+ GET  /transactions                        -> ApiResult<Transaction[]>
+ POST /transactions {type,amount,toEmail?} -> ApiResult<Transaction>
+*/
+
+/* ##################################################################
+   SECTION 2 - SERVICES LEAD
+   The mock engine. Fake data + fake delays. Every function returns
+   the ApiResult shape from Section 1. UI code only talks to these.
+   ################################################################## */
+const wait = (ms = 900) => new Promise(r => setTimeout(r, ms));   // fake server delay
+const fail = (code, message) => ({ ok: false, error: { code, message } });
+
+const db = {   // fake database
+  user: { id: "u1", name: "Ada Lovelace", email: "ada@bankofcli.dev" },
+  account: { id: "a1", ownerId: "u1", balance: 4280.5, currency: "USD" },
+  txs: [
+    { id: "t3", type: "DEPOSIT", amount: 1200, date: "2026-09-25T10:00:00Z", description: "Paycheck" },
+    { id: "t2", type: "WITHDRAW", amount: 60, date: "2026-09-24T18:30:00Z", description: "ATM withdrawal" },
+    { id: "t1", type: "TRANSFER", amount: 250, date: "2026-09-22T09:15:00Z", description: "Transfer to grace@bankofcli.dev" }
+  ]
+};
+
+const AuthService = {
+  async login(email, password) {
+    await wait();
+    if (email === db.user.email && password === "password123") return { ok: true, data: db.user };
+    return fail("INVALID_CREDENTIALS", "Email or password is incorrect.");
+  },
+  async register(name, email, password) {
+    await wait();
+    if (email === db.user.email) return fail("EMAIL_TAKEN", "That email is already registered.");
+    return { ok: true, data: { id: "u2", name, email } };
+  }
+};
+
+const AccountService = {
+  async getAccount() { await wait(700); return { ok: true, data: { ...db.account } }; },
+  async getTransactions() { await wait(900); return { ok: true, data: [...db.txs] }; },
+  async submit(type, amount, toEmail) {
+    await wait();
+    if (type !== "DEPOSIT" && amount > db.account.balance)
+      return fail("INSUFFICIENT_FUNDS", "Not enough funds for this transaction.");
+    db.account.balance += type === "DEPOSIT" ? amount : -amount;
+    const tx = { id: "t" + Date.now(), type, amount, date: new Date().toISOString(),
+      description: type === "TRANSFER" ? "Transfer to " + toEmail : type === "DEPOSIT" ? "Deposit" : "Withdrawal" };
+    db.txs.unshift(tx);
+    return { ok: true, data: tx };
+  }
+};
+
+/* ##################################################################
+   SECTION 3 - DESIGN SYSTEM & SHARED COMPONENTS
+   Reusable building blocks used by every screen. (Its CSS is in the
+   <style> block at the top.)
+   ################################################################## */
+const $ = s => document.querySelector(s);                         // shortcut for finding an element
+const usd = n => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Reusable button (used for Sign in, Register, Submit...)
+const Button = (label, id, extra = "") => `<button class="btn ${extra}" id="${id}"><span>${label}</span></button>`;
+
+// Reusable input with label + error line under it
+const Field = (id, label, type = "text", attrs = "") =>
+  `<label for="${id}">${label}</label><input id="${id}" type="${type}" ${attrs}><div class="err" id="${id}-e"></div>`;
+
+// Shows/clears the red error text under a field. Returns true if valid.
+function setErr(id, msg) { $("#" + id + "-e").textContent = msg || ""; return !msg; }
+
+// Spinner on a button while a (fake) server call runs
+async function withLoading(btn, fn) {
+  const label = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = label; }
+}
+
+/* ##################################################################
+   SECTION 4 - AUTH SCREENS
+   Login + Registration with validation and error states.
+   ################################################################## */
+let authMode = "login";
+
+function renderAuth() {
+  const reg = authMode === "register";
+  $("#app").innerHTML = `<div class="auth"><div class="card">
+    <div class="logo">&gt;_ Bank of <b>CLI</b></div>
+    <div class="tabs"><button class="${!reg ? "on" : ""}" data-m="login">Sign in</button><button class="${reg ? "on" : ""}" data-m="register">Register</button></div>
+    ${reg ? Field("name", "Full name") : ""}
+    ${Field("email", "Email", "email", 'autocomplete="email"')}
+    ${Field("pw", "Password", "password", 'autocomplete="current-password"')}
+    <div style="margin-top:18px">${Button(reg ? "Create account" : "Sign in", "go")}</div>
+    <div class="hint mono">demo: ada@bankofcli.dev / password123</div></div></div>`;
+
+  document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { authMode = b.dataset.m; renderAuth(); });
+
+  $("#go").onclick = async e => {
+    const email = $("#email").value.trim(), pw = $("#pw").value, name = reg ? $("#name").value.trim() : "x";
+    // client-side validation
+    let ok = setErr("email", /^\S+@\S+\.\S+$/.test(email) ? "" : "Enter a valid email.");
+    ok = setErr("pw", pw.length >= 8 ? "" : "Minimum 8 characters.") && ok;
+    if (reg) ok = setErr("name", name ? "" : "Name is required.") && ok;
+    if (!ok) return;
+    // ask the service (never hardcode data here)
+    const res = await withLoading(e.currentTarget, () => reg ? AuthService.register(name, email, pw) : AuthService.login(email, pw));
+    if (!res.ok) return toast(res.error.message, true);      // error state
+    toast("Welcome, " + res.data.name.split(" ")[0] + "!");   // success state
+    renderApp(res.data);
+  };
+}
+
+/* ##################################################################
+   SECTION 5 - DASHBOARD
+   Balance card + recent transactions list + skeleton loaders.
+   ################################################################## */
+const BalanceCard = () => `<div class="card bal"><small>Available balance</small>
+  <div class="amt mono" id="bal"><div class="sk" style="height:40px;width:60%;margin:8px 0;opacity:.5"></div></div>
+  <small class="mono">ACCT •••• 0421</small></div>`;
+
+const TransactionList = () => `<div class="card"><b>Recent transactions</b><div id="list" style="margin-top:8px"></div></div>`;
+
+// Loads balance + transactions from the services (shows skeletons while waiting)
+async function loadDashboardData() {
+  $("#list").innerHTML = [1, 2, 3, 4].map(() =>
+    '<div class="tx"><div class="sk" style="width:55%"></div><div class="sk" style="width:20%"></div></div>').join("");
+  const [a, t] = await Promise.all([AccountService.getAccount(), AccountService.getTransactions()]);
+  if (!$("#bal")) return;   // user logged out while loading
+  $("#bal").textContent = usd(a.data.balance);
+  $("#list").innerHTML = t.data.map(x => {
+    const plus = x.type === "DEPOSIT";
+    return `<div class="tx"><div>${esc(x.description)}<small>${new Date(x.date).toLocaleDateString()} · ${x.type}</small></div>
+      <b class="mono ${plus ? "pos" : "neg"}">${plus ? "+" : "−"}${usd(x.amount)}</b></div>`;
+  }).join("");
+}
+
+/* ##################################################################
+   SECTION 6 - TRANSACTION CENTER
+   Deposit / Withdraw / Transfer forms with validation, loading,
+   and success/error handling.
+   ################################################################## */
+let txTab = "DEPOSIT";
+
+const TransactionCenter = () => `<div class="card"><b>Transaction center</b>
+  <div class="tabs">${["DEPOSIT", "WITHDRAW", "TRANSFER"].map(t =>
+    `<button data-t="${t}" class="${t === txTab ? "on" : ""}">${t[0] + t.slice(1).toLowerCase()}</button>`).join("")}</div>
+  ${txTab === "TRANSFER" ? Field("to", "Recipient email", "email") : ""}
+  ${Field("amt", "Amount (USD)", "number", 'inputmode="decimal" min="0.01" step="0.01" placeholder="0.00"')}
+  ${Button("Submit " + txTab.toLowerCase(), "sub")}</div>`;
+
+function bindTransactionCenter(user) {
+  // switching between Deposit / Withdraw / Transfer
+  document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { txTab = b.dataset.t; renderApp(user); });
+
+  $("#sub").onclick = async e => {
+    const amount = parseFloat($("#amt").value), to = txTab === "TRANSFER" ? $("#to").value.trim() : "";
+    // client-side validation: no empty, no zero/negative
+    let ok = setErr("amt", amount > 0 ? "" : "Enter an amount greater than 0.");
+    if (txTab === "TRANSFER") ok = setErr("to", /^\S+@\S+\.\S+$/.test(to) ? "" : "Enter a valid recipient email.") && ok;
+    if (!ok) return;
+    const res = await withLoading(e.currentTarget, () => AccountService.submit(txTab, amount, to));
+    if (!res.ok) return toast(res.error.message, true);
+    toast(usd(amount) + " " + txTab.toLowerCase() + " successful");
+    $("#amt").value = "";
+    loadDashboardData();   // refresh balance + list
+  };
+}
+
+/* ##################################################################
+   SECTION 7 - APP SHELL, FEEDBACK (TOASTS) & QA
+   Header/logout, page layout, toast notifications, and app startup.
+   Responsive layout rules live in the CSS at the top.
+   ################################################################## */
+
+// Toast notification (green = success, red = error)
+function toast(msg, bad) {
+  const t = document.createElement("div");
+  t.className = "toast" + (bad ? " bad" : "");
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// The logged-in page: header + Section 5 and Section 6 pieces assembled together
+function renderApp(user) {
+  $("#app").innerHTML = `<header><div class="logo">&gt;_ Bank of <b>CLI</b></div>
+    <div><span style="color:var(--mute);font-size:.85rem;margin-right:10px">${esc(user.name)}</span>
+    <button class="btn ghost" id="out">Log out</button></div></header>
+    <div class="grid">
+      <div class="col">${BalanceCard()}${TransactionCenter()}</div>
+      ${TransactionList()}
+    </div>`;
+  $("#out").onclick = () => { toast("Signed out"); renderAuth(); };
+  bindTransactionCenter(user);
+  loadDashboardData();
+}
+
+// Start the app on the login screen
+renderAuth();
+</script>
+</body>
+</html>
