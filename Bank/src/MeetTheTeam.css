@@ -149,3 +149,21 @@ code {
 .flex-col .item { flex: initial; }
 .flex-col .grow-main { flex: 1; }
 
+.home-button {
+  /* Position the button in the top-left corner of the header */
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  /* Home Icon */
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+
+
+
+

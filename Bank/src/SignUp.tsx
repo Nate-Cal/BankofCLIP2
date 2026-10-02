@@ -17,9 +17,14 @@ function SignUp() {
         <div className="itemHeader">
             <h1>Sign Up for a New Account</h1>
 
-            <button type="button" onClick={() => window.location.href = '/'}>
-                Home
-            </button>
+            
+            {/* Top-Left Home Button */}
+            {/* Home Icon */}
+            <div className="home-button">
+                <button type="button" onClick={() => window.location.href = '/'}>
+                    Home
+                </button>
+            </div>
         </div>
 
         <div className="item grow-main">

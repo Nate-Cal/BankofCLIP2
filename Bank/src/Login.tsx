@@ -19,9 +19,13 @@ function Login() {
       <div className="itemHeader">
         <h1>Login to Your Account</h1>
 
-        <button type="button" onClick={() => window.location.href = '/'}>
-                Home
-        </button>
+        {/* Top-Left Home Button */}
+            {/* Home Icon */}
+            <div className="home-button">
+                <button type="button" onClick={() => window.location.href = '/'}>
+                    Home
+                </button>
+            </div>
 
       </div>
 
