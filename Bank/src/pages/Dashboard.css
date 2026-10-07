@@ -1,0 +1,7 @@
+.dashboard { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; max-width: 1000px; margin: 0 auto; padding: 16px; }
+.dashboard-accounts { display: grid; gap: 16px; min-width: 0; }
+.dashboard-error { grid-column: 1 / -1; }
+.dashboard-error p { margin: 0 0 12px; }
+.dashboard-error button { padding: 10px 16px; border: 0; border-radius: 10px; background: var(--acc); color: var(--accf); font: inherit; cursor: pointer; }
+.dashboard-error button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (min-width: 800px) { .dashboard { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); } }
