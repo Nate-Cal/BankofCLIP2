@@ -1,0 +1,51 @@
+{
+  "user": {
+    "id": "u1",
+    "userId": "ada",
+    "firstName": "Ada",
+    "lastName": "Lovelace"
+  },
+  "accounts": [
+    {
+      "id": "a1",
+      "userId": "u1",
+      "type": "CHECKING",
+      "name": "Checking",
+      "lastFour": "0421",
+      "balanceCents": 428050,
+      "currency": "USD"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "t3",
+      "accountId": "a1",
+      "type": "DEPOSIT",
+      "direction": "CREDIT",
+      "description": "Paycheck",
+      "amountCents": 120000,
+      "createdAt": "2026-09-25T10:00:00Z",
+      "status": "COMPLETED"
+    },
+    {
+      "id": "t2",
+      "accountId": "a1",
+      "type": "WITHDRAWAL",
+      "direction": "DEBIT",
+      "description": "ATM withdrawal",
+      "amountCents": 6000,
+      "createdAt": "2026-09-24T18:30:00Z",
+      "status": "COMPLETED"
+    },
+    {
+      "id": "t1",
+      "accountId": "a1",
+      "type": "TRANSFER",
+      "direction": "DEBIT",
+      "description": "Transfer to grace@bankofcli.dev",
+      "amountCents": 25000,
+      "createdAt": "2026-09-22T09:15:00Z",
+      "status": "COMPLETED"
+    }
+  ]
+}
