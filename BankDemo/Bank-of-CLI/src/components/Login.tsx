@@ -2,6 +2,9 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { AuthService } from "../service/AuthService";
 import { toast, Button } from "../utils/Database";
 import "../index.css";
+import { Link } from "react-router-dom";
+
+
 
 
 type User = {
@@ -56,7 +59,7 @@ export default function Auth({ setUser, setToasts }: LoginProps) {
 
   return (
     <div className="auth">
-      <div className="card">
+      <div className="card" onSubmit = {handleSubmit}>
         <div className="logo">&gt;_ Bank of <b>CLI</b></div>
 
         <div className="tabs">
@@ -108,6 +111,14 @@ export default function Auth({ setUser, setToasts }: LoginProps) {
 
         <div className="hint mono">demo: ada@bankofcli.dev / password123</div>
       </div>
+      
+      <footer className="footer">
+        <div className="logo">&gt;_ Bank of <b>CLI</b></div>
+        <div className="copyright">Copyright &copy; {new Date().getFullYear()} Bank of CLI</div>
+        <div className="Connect">
+          <Link to="/connect">Connect</Link>
+        </div>
+      </footer>
     </div>
   );
 }
