@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import { BalanceCard } from '../components/Dashboard/BalanceCard'
 import { TransactionList } from '../components/Dashboard/TransactionList'
-import type { BankService, DashboardResponse } from '../models/banking'
+import type { Account, Transaction } from '../types'
 import { DashboardService } from '../services/DashboardService'
 import './Dashboard.css'
 
 interface DashboardProps {
   // Increment after a successful transaction to reload Section 5.
   refreshKey?: number
-  service?: Pick<BankService, 'getDashboard'>
+  service?: typeof DashboardService
 }
 
 export function Dashboard({ refreshKey = 0, service = DashboardService }: DashboardProps) {
-  const [data, setData] = useState<DashboardResponse | null>(null)
+  const [account, setAccount] = useState<Account | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -23,10 +24,23 @@ export function Dashboard({ refreshKey = 0, service = DashboardService }: Dashbo
       setLoading(true)
       setError(null)
       try {
-        const result = await service.getDashboard()
-        if (active) setData(result)
-      } catch {
-        if (active) setError('Unable to load your dashboard. Please try again.')
+        const [accountResult, transactionsResult] = await Promise.all([
+          service.getAccount(),
+          service.getTransactions(),
+        ])
+        // ApiResult uses optional data, so check both success and its payload.
+        if (!accountResult.ok || !accountResult.data) {
+          throw new Error(accountResult.error?.message || 'Unable to load your account.')
+        }
+        if (!transactionsResult.ok || !transactionsResult.data) {
+          throw new Error(transactionsResult.error?.message || 'Unable to load recent transactions.')
+        }
+        if (active) {
+          setAccount(accountResult.data)
+          setTransactions(transactionsResult.data)
+        }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load your dashboard. Please try again.')
       } finally {
         if (active) setLoading(false)
       }
@@ -46,11 +60,9 @@ export function Dashboard({ refreshKey = 0, service = DashboardService }: Dashbo
       ) : (
         <>
           <div className="dashboard-accounts">
-            {loading ? <BalanceCard loading /> : data?.accounts.length ? (
-              data.accounts.map((account) => <BalanceCard key={account.id} account={account} />)
-            ) : <BalanceCard />}
+            <BalanceCard account={account ?? undefined} loading={loading} />
           </div>
-          <TransactionList transactions={data?.transactions ?? []} loading={loading} />
+          <TransactionList transactions={transactions} loading={loading} />
         </>
       )}
     </main>

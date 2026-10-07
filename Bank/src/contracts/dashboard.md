@@ -1,19 +1,28 @@
-# Section 5 dashboard contract
+# Section 5: use of the shared contracts
 
-The existing interfaces in `../models/banking.ts` are the source of truth.
-`DashboardService.getDashboard()` returns `Promise<DashboardResponse>` with
-`user`, `accounts`, and `transactions`. See `../mocks/dashboard.json` for the
-complete example response adapted from the HTML demo.
+Section 1 remains the source of truth. This dashboard adds no domain types.
 
-- Money is integer cents: `428050` displays as `$4,280.50`.
-- Transactions use `WITHDRAWAL`, as defined in the existing model.
-- `direction` sets the displayed sign: `CREDIT` is positive, `DEBIT` negative.
-- Dates are ISO 8601 strings in `createdAt`, displayed in the user's local time.
-- Transactions arrive in newest-first order.
-- Empty account and transaction arrays are supported.
-- A rejected service promise displays an error and retry button.
+- `src/types.ts` supplies `Account`, `Transaction`, and `TransactionType`.
+- `src/contracts/account.ts` supplies `GetAccountResponse` (`ApiResult<Account>`).
+- `src/contracts/transactions.ts` supplies `GetTransactionsResponse` (`ApiResult<Transaction[]>`).
 
-The page calls the service. BalanceCard and TransactionList only receive props.
-Connect the team's service with `<Dashboard service={bankService} />`; it needs
-only the existing `getDashboard()` method. Increment the optional `refreshKey`
-prop after a successful transaction to reload the dashboard.
+The page calls `getAccount()` and `getTransactions()` together. It checks `ok`
+and the presence of `data` before rendering. An API error or rejected promise
+shows feedback with a retry button. An empty transaction array is supported.
+
+`mocks/dashboard.json` stores the two responses under `account` and
+`transactions`; the service returns each response separately. This wrapper is
+only for organizing the mock file, not a new backend response contract.
+
+Account money uses `balance` in dollars, and transaction money uses `amount`
+in dollars. Dates come from `date`. The shared transaction values are
+`DEPOSIT`, `WITHDRAW`, and `TRANSFER`. Deposits display as positive; withdrawals
+and outgoing transfers display as negative, following the HTML demo.
+
+The account footer displays `account.id`, since the shared Account does not
+include a separate account number or `lastFour` field. The card layout and
+styling are unchanged.
+
+The page calls services; BalanceCard and TransactionList only receive props.
+Pass a service with the same two methods using `<Dashboard service={accountService} />`.
+Increment `refreshKey` after a successful transaction to reload Section 5.

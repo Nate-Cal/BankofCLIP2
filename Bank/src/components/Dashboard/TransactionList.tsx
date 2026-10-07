@@ -1,4 +1,4 @@
-import type { Transaction } from '../../models/banking'
+import type { Transaction } from '../../types'
 import './styles.css'
 
 interface TransactionListProps {
@@ -22,19 +22,19 @@ export function TransactionList({ transactions, loading = false }: TransactionLi
       ) : transactions.length === 0 ? <p className="dashboard-empty">No recent transactions.</p> : (
         <ul className="dashboard-transactions">
           {transactions.map((transaction) => {
-            const credit = transaction.direction === 'CREDIT'
+            const credit = transaction.type === 'DEPOSIT'
             return (
               <li className="dashboard-transaction" key={transaction.id}>
                 <div className="dashboard-description">
                   {transaction.description}
                   <small>
-                    <time dateTime={transaction.createdAt}>{new Date(transaction.createdAt).toLocaleDateString()}</time>
+                    <time dateTime={transaction.date}>{new Date(transaction.date).toLocaleDateString()}</time>
                     {' · '}{transaction.type}
                   </small>
                 </div>
                 <b className={`dashboard-mono dashboard-value ${credit ? 'dashboard-positive' : 'dashboard-negative'}`}>
                   {credit ? '+' : '−'}
-                  {(transaction.amountCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                  {transaction.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                 </b>
               </li>
             )

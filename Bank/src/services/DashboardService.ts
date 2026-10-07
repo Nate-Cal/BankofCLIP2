@@ -1,10 +1,17 @@
 import mockDashboard from '../mocks/dashboard.json'
-import type { BankService, DashboardResponse } from '../models/banking'
+import type { GetAccountResponse } from '../contracts/account'
+import type { GetTransactionsResponse } from '../contracts/transactions'
 
-// Only the read operation needed by Section 5; uses the existing banking model.
-export const DashboardService: Pick<BankService, 'getDashboard'> = {
-  async getDashboard(): Promise<DashboardResponse> {
+// These read operations follow the shared Section 1 API contracts.
+// Replace the mock reads with API calls when the backend is ready.
+export const DashboardService = {
+  async getAccount(): Promise<GetAccountResponse> {
+    await new Promise<void>((resolve) => setTimeout(resolve, 700))
+    return structuredClone(mockDashboard.account) as GetAccountResponse
+  },
+
+  async getTransactions(): Promise<GetTransactionsResponse> {
     await new Promise<void>((resolve) => setTimeout(resolve, 900))
-    return structuredClone(mockDashboard) as DashboardResponse
+    return structuredClone(mockDashboard.transactions) as GetTransactionsResponse
   },
 }
