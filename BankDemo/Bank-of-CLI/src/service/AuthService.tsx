@@ -15,6 +15,9 @@ export const AuthService = {
     return fail("INVALID_CREDENTIALS", "Email or password is incorrect.");
   },
 
+
+  
+
   async register(name: string, email: string, password: string) {
     await wait();
 
