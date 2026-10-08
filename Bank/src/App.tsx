@@ -14,7 +14,11 @@ export default function AppRoot() {
     <ToastContainer>
       <Routes>
         <Route path="/connect" element={<Connect />} />
-        <Route path="*" element={user ? <Dashboard /> : <Login setUser={setUser} />} />
+        <Route path="*" element={user ? (
+          <Dashboard user={user} onLogout={() => setUser(null)} />) : 
+          ( <Login setUser={setUser} /> ) 
+        } 
+      />
       </Routes>
     </ToastContainer>
           
