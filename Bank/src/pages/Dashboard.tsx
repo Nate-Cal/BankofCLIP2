@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react'
 import { BalanceCard } from '../components/Dashboard/BalanceCard'
 import { TransactionList } from '../components/Dashboard/TransactionList'
-import type { Account, Transaction } from '../types'
+import type { Account, Transaction, User } from '../types'
 import { DashboardService } from '../services/DashboardService'
 import './Dashboard.css'
 import Footer from '../components/Footer/FooterContainer'
+import { useToast } from '../components/Toast/ToastContainer'
 
 interface DashboardProps {
+  // Hold State for User and move state to void on Logout
+  user: User
+  onLogout: () => void
   // Increment after a successful transaction to reload Section 5.
   refreshKey?: number
   service?: typeof DashboardService
 }
 
-export function Dashboard({ refreshKey = 0, service = DashboardService }: DashboardProps) {
+export function Dashboard({ user, onLogout, refreshKey = 0, service = DashboardService }: DashboardProps) {
+  const { showToastMessage } = useToast()
   const [account, setAccount] = useState<Account | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,8 +56,19 @@ export function Dashboard({ refreshKey = 0, service = DashboardService }: Dashbo
     return () => { active = false }
   }, [refreshKey, retry, service])
 
+  const handleLogout = () => {
+    showToastMessage("You have been signed out.")
+    onLogout();
+  }
+
   return (
     <main className="dashboard" aria-label="Account dashboard">
+      <header className='dashboard-header'>
+        <span>Hi, {user.name.split(' ')[0]}</span>
+        <button type="button" className='dashboard-logout' onClick={handleLogout}>
+          Log out
+        </button>
+      </header>
       {error ? (
         <div className="dashboard-card dashboard-error" role="alert">
           <p>{error}</p>
