@@ -1,5 +1,22 @@
-import { Dashboard } from './pages/Dashboard'
+import { useState } from "react";
+import Connect from "./pages/Connect"
+import Login from "./pages/Login";
+import { Dashboard } from "./pages/Dashboard";
+import { ToastContainer } from "./components/Toast/ToastContainer";
+import {Routes, Route} from "react-router-dom";
 
-export function App() {
-  return <Dashboard />
+type User = { id: string; name: string; email: string };
+
+export default function AppRoot() {
+  const [user, setUser] = useState<User | null>(null);
+
+  return (
+    <ToastContainer>
+      <Routes>
+        <Route path="/connect" element={<Connect />} />
+        <Route path="*" element={user ? <Dashboard /> : <Login setUser={setUser} />} />
+      </Routes>
+    </ToastContainer>
+          
+  );
 }
