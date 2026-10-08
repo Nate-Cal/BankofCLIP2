@@ -1,0 +1,37 @@
+{
+  "account": {
+    "ok": true,
+    "data": {
+      "id": "a1",
+      "ownerId": "u1",
+      "balance": 4280.5,
+      "currency": "USD"
+    }
+  },
+  "transactions": {
+    "ok": true,
+    "data": [
+      {
+        "id": "t3",
+        "type": "DEPOSIT",
+        "amount": 1200.0,
+        "date": "2026-09-25T10:00:00Z",
+        "description": "Paycheck"
+      },
+      {
+        "id": "t2",
+        "type": "WITHDRAW",
+        "amount": 60.0,
+        "date": "2026-09-24T18:30:00Z",
+        "description": "ATM withdrawal"
+      },
+      {
+        "id": "t1",
+        "type": "TRANSFER",
+        "amount": 250.0,
+        "date": "2026-09-22T09:15:00Z",
+        "description": "Transfer to grace@bankofcli.dev"
+      }
+    ]
+  }
+}

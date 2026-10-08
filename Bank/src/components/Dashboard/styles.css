@@ -1,0 +1,23 @@
+/* Section 5: balance card, recent transactions, and loading skeletons. */
+.dashboard-card { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.dashboard-mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.dashboard-balance { border: 0; background: linear-gradient(135deg, var(--acc), #075c40); color: #fff; }
+.dashboard-balance small { opacity: .8; }
+.dashboard-amount { margin: 6px 0; font-size: 2.4rem; font-weight: 700; overflow-wrap: anywhere; }
+.dashboard-title { margin: 0 0 8px; font-size: 1rem; font-weight: 700; }
+.dashboard-transactions { margin: 0; padding: 0; list-style: none; }
+.dashboard-transaction { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.dashboard-transaction:last-child { border: 0; }
+.dashboard-description { min-width: 0; overflow-wrap: anywhere; }
+.dashboard-description small { display: block; color: var(--mute); }
+.dashboard-value { flex-shrink: 0; white-space: nowrap; }
+.dashboard-positive { color: var(--acc); }
+.dashboard-negative { color: var(--bad); }
+.dashboard-empty { margin: 16px 0 0; color: var(--mute); }
+.dashboard-skeleton { height: 16px; border-radius: 8px; background: var(--sk); animation: dashboard-pulse 1.2s infinite; }
+.dashboard-balance-skeleton { width: 60%; height: 40px; margin: 8px 0; opacity: .5; }
+.dashboard-description-skeleton { width: 55%; }
+.dashboard-value-skeleton { width: 20%; }
+@keyframes dashboard-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .dashboard-skeleton { animation: none; } }
+@media (max-width: 360px) { .dashboard-transaction { flex-wrap: wrap; } .dashboard-value { margin-left: auto; } }
