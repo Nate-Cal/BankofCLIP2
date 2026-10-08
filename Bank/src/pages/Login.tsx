@@ -1,25 +1,20 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
-import { AuthService } from "../service/AuthService";
-import { toast, Button } from "../utils/Database";
-import "../index.css";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { AuthService } from "../services/AuthService";
+import { useToast } from "../components/Toast/ToastContainer";
+import { Button } from "../util/Utilities";
+import Footer from "../components/Footer/FooterContainer";
+import type { User } from "../types";
+import "./Login.css";
 
 
 
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-};
+const auth = new AuthService();
 
-type LoginProps = {
-  setUser: (user: User) => void;
-  setToasts: Dispatch<SetStateAction<{ id: number; msg: string; bad: boolean }[]>>;
-};
 
-export default function Auth({ setUser, setToasts }: LoginProps) {
-  const [authMode, setAuthMode] = useState("login");
+export default function Login({ setUser }: { setUser: (user: User) => void }) {
+  const { showToastMessage } = useToast();
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ name: "", email: "", pw: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -42,15 +37,15 @@ export default function Auth({ setUser, setToasts }: LoginProps) {
     setLoading(true);
     try {
       const res = reg
-        ? await AuthService.register(name.trim(), email.trim(), pw)
-        : await AuthService.login(email.trim(), pw);
+        ? await auth.register(name.trim(), email.trim(), pw)
+        : await auth.login(email.trim(), pw);
 
-      if ("error" in res) {
-        toast(setToasts, res.error.message, true);
+      if (!res.ok || !res.data) {
+        showToastMessage(res.error?.message ?? "Something went wrong.", true);
         return;
       }
 
-      toast(setToasts, `Welcome, ${res.data.name.split(" ")[0]}!`);
+      showToastMessage(`Welcome, ${res.data.name.split(" ")[0]}!`);
       setUser(res.data);
     } finally {
       setLoading(false);
@@ -104,7 +99,7 @@ export default function Auth({ setUser, setToasts }: LoginProps) {
 
         <Button
           id="go"
-          label={loading ? "Please wait..." : reg ? "Create account" : "Sign in"}
+          label={reg ? "Create account" : "Sign in"}
           onClick={handleSubmit}
           loading={loading}
         />
@@ -112,13 +107,7 @@ export default function Auth({ setUser, setToasts }: LoginProps) {
         <div className="hint mono">demo: ada@bankofcli.dev / password123</div>
       </div>
       
-      <footer className="footer">
-        <div className="logo">&gt;_ Bank of <b>CLI</b></div>
-        <div className="copyright">Copyright &copy; {new Date().getFullYear()} Bank of CLI</div>
-        <div className="Connect">
-          <Link to="/connect">Connect</Link>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 }

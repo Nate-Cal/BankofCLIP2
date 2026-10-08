@@ -4,6 +4,7 @@ import { TransactionList } from '../components/Dashboard/TransactionList'
 import type { Account, Transaction } from '../types'
 import { DashboardService } from '../services/DashboardService'
 import './Dashboard.css'
+import Footer from '../components/Footer/FooterContainer'
 
 interface DashboardProps {
   // Increment after a successful transaction to reload Section 5.
@@ -65,6 +66,7 @@ export function Dashboard({ refreshKey = 0, service = DashboardService }: Dashbo
           <TransactionList transactions={transactions} loading={loading} />
         </>
       )}
+      <Footer/>
     </main>
   )
 }
