@@ -1,70 +1,90 @@
-import { useEffect, useState } from 'react'
-import { BalanceCard } from '../components/Dashboard/BalanceCard'
-import { TransactionList } from '../components/Dashboard/TransactionList'
-import type { Account, Transaction } from '../types'
-import { DashboardService } from '../services/DashboardService'
-import './Dashboard.css'
+import { useState } from 'react';
+import { wait } from '../util/Utilities'; 
+import { useToast } from '../components/Toast/ToastContainer'; 
+import { BalanceCard } from '../components/Dashboard/BalanceCard';
+import { ActionPanel } from '../components/Dashboard/ActionPanel';
+import { RecentActivity } from '../components/Dashboard/RecentActivity';
+import type { Transaction, MenuMode } from '../models/banking'; 
+import './Dashboard.css';
 
-interface DashboardProps {
-  // Increment after a successful transaction to reload Section 5.
-  refreshKey?: number
-  service?: typeof DashboardService
-}
-
-export function Dashboard({ refreshKey = 0, service = DashboardService }: DashboardProps) {
-  const [account, setAccount] = useState<Account | null>(null)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [retry, setRetry] = useState(0)
-
-  useEffect(() => {
-    let active = true
-    async function loadDashboardData() {
-      setLoading(true)
-      setError(null)
-      try {
-        const [accountResult, transactionsResult] = await Promise.all([
-          service.getAccount(),
-          service.getTransactions(),
-        ])
-        // ApiResult uses optional data, so check both success and its payload.
-        if (!accountResult.ok || !accountResult.data) {
-          throw new Error(accountResult.error?.message || 'Unable to load your account.')
-        }
-        if (!transactionsResult.ok || !transactionsResult.data) {
-          throw new Error(transactionsResult.error?.message || 'Unable to load recent transactions.')
-        }
-        if (active) {
-          setAccount(accountResult.data)
-          setTransactions(transactionsResult.data)
-        }
-      } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load your dashboard. Please try again.')
-      } finally {
-        if (active) setLoading(false)
-      }
+export function Dashboard() {
+  const { showToastMessage } = useToast();
+  const [activeMenu, setActiveMenu] = useState<MenuMode>('MAIN');
+  
+  // Data State using official 'cents' structure
+  const [balanceCents, setBalanceCents] = useState<number>(1300050);
+  
+  const [transactions, setTransactions] = useState<Transaction[]>([
+    { 
+      id: 't_1', accountId: 'acc_1', type: 'DEPOSIT', direction: 'CREDIT', 
+      description: 'Paycheck Deposit', amountCents: 250000, 
+      createdAt: '2026-10-07T10:00:00Z', status: 'COMPLETED' 
+    },
+    { 
+      id: 't_2', accountId: 'acc_1', type: 'WITHDRAWAL', direction: 'DEBIT', 
+      description: 'Groceries Store', amountCents: 12450, 
+      createdAt: '2026-10-06T14:30:00Z', status: 'COMPLETED' 
+    },
+    { 
+      id: 't_3', accountId: 'acc_1', type: 'WITHDRAWAL', direction: 'DEBIT', 
+      description: 'Monthly Subscription', amountCents: 1599, 
+      createdAt: '2026-10-04T09:15:00Z', status: 'COMPLETED' 
+    },
+    { 
+      id: 't_4', accountId: 'acc_1', type: 'WITHDRAWAL', direction: 'DEBIT', 
+      description: 'ATM Cash Withdrawal', amountCents: 10000, 
+      createdAt: '2026-10-02T18:45:00Z', status: 'COMPLETED' 
     }
-    void loadDashboardData()
-    // Ignore a response after leaving the screen or starting a newer load.
-    return () => { active = false }
-  }, [refreshKey, retry, service])
+  ]);
+
+  const handleProcessTransaction = async (amountInCents: number, desc: string, to: string) => {
+    await wait(800); 
+
+    setBalanceCents(prev => activeMenu === 'DEPOSIT' ? prev + amountInCents : prev - amountInCents);
+
+    const defaultDesc = activeMenu === 'DEPOSIT' ? 'Deposit' : activeMenu === 'WITHDRAWAL' ? 'Withdrawal' : `Transfer to ${to}`;
+
+    const newTx: Transaction = {
+      id: `t_${Date.now()}`,
+      accountId: 'acc_1',
+      description: desc.trim() || defaultDesc,
+      amountCents: amountInCents,
+      type: activeMenu as Transaction['type'],
+      direction: activeMenu === 'DEPOSIT' ? 'CREDIT' : 'DEBIT',
+      createdAt: new Date().toISOString(),
+      status: 'COMPLETED'
+    };
+    
+    setTransactions(prev => [newTx, ...prev]);
+
+    const actionText = activeMenu === 'DEPOSIT' ? 'deposited' : activeMenu === 'WITHDRAWAL' ? 'withdrawn' : 'transferred';
+    showToastMessage(`Successfully ${actionText} $${(amountInCents / 100).toFixed(2)}`, false);
+  };
 
   return (
-    <main className="dashboard" aria-label="Account dashboard">
-      {error ? (
-        <div className="dashboard-card dashboard-error" role="alert">
-          <p>{error}</p>
-          <button type="button" onClick={() => setRetry((value) => value + 1)}>Try again</button>
-        </div>
-      ) : (
-        <>
-          <div className="dashboard-accounts">
-            <BalanceCard account={account ?? undefined} loading={loading} />
-          </div>
-          <TransactionList transactions={transactions} loading={loading} />
-        </>
+    <main className="dashboard dark-theme" aria-label="Banking dashboard">
+      <div className="dashboard-header">
+        <h1>Banking Dashboard</h1>
+      </div>
+
+      <div className="dashboard-grid">
+        <BalanceCard balanceCents={balanceCents} />
+        
+        <ActionPanel 
+          balanceCents={balanceCents}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+          transactions={transactions}
+          onProcessTransaction={handleProcessTransaction}
+        />
+      </div>
+
+      {activeMenu !== 'TRANSACTIONS' && (
+        <RecentActivity 
+          transactions={transactions} 
+          setActiveMenu={setActiveMenu} 
+        />
       )}
     </main>
-  )
+  );
 }

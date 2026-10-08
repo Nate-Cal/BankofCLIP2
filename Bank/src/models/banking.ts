@@ -7,6 +7,7 @@ export interface User {
 
 export type AccountType = 'CHECKING' | 'SAVINGS'
 export type TransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER'
+export type MenuMode = 'MAIN' | 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER' | 'TRANSACTIONS';
 
 export interface Account {
   id: string

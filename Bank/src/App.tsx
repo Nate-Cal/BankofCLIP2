@@ -1,5 +1,10 @@
-import { Dashboard } from './pages/Dashboard'
+import { ToastContainer } from './components/Toast/ToastContainer';
+import { Dashboard } from './pages/Dashboard';
 
 export function App() {
-  return <Dashboard />
+  return (
+    <ToastContainer>
+      <Dashboard />
+    </ToastContainer>
+  );
 }
