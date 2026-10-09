@@ -14,6 +14,26 @@
   --text-gray: #8b9e93; 
 }
 
+.link-button, 
+.list-title-row button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: var(--cli-green) !important;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.link-button:hover, 
+.list-title-row button:hover {
+  filter: brightness(1.2);
+  transform: none !important;
+}
+
 body {
   background-color: var(--dark-bg);
   color: var(--text-white);
@@ -24,17 +44,42 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* =========================================
+   Layout & Grid (Mobile First)
+   ========================================= */
 .dashboard.dark-theme {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
+  padding: 1.5rem 1rem; /* Tighter padding for mobile */
 }
 
 .dashboard-header h1 {
-  font-size: 2rem;
-  margin-bottom: 2rem;
+  font-size: 1.5rem; /* Scaled down for mobile */
+  margin-bottom: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.02em; 
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Single column on mobile */
+  gap: 1rem; /* Tighter gap on mobile */
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard.dark-theme {
+    padding: 2.5rem 1.5rem;
+  }
+  .dashboard-header h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  .dashboard-grid {
+    grid-template-columns: 2fr 3fr; /* Restores desktop layout */
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
 }
 
 .gradient-name {
@@ -45,98 +90,32 @@ body {
   text-shadow: 0 4px 12px rgba(62, 224, 132, 0.15); 
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 768px) {
-  .dashboard-grid {
-    grid-template-columns: 2fr 3fr;
-  }
-}
-
+/* =========================================
+   Cards 
+   ========================================= */
 .card {
-background: linear-gradient(145deg, #161e19, #0d120e);
+  background: linear-gradient(145deg, #161e19, #0d120e);
   border: 1px solid rgba(62, 224, 132, 0.08);
   border-radius: 18px;
-  padding: 1.75rem;
+  padding: 1.25rem; /* Tighter padding for mobile */
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.05), 
     0 16px 32px rgba(0, 0, 0, 0.6),            
-    0 4px 8px rgba(0, 0, 0, 0.3);   
+    0 4px 8px rgba(0, 0, 0, 0.3);              
   display: flex;
   flex-direction: column;
-  justify-content: center;           
-}
-
-.spin {
-  display: inline-block;
-  width: 1.2rem;
-  height: 1.2rem;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #ffffff;
-  animation: spin 0.8s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.toast-container {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  z-index: 9999;
-}
-
-.toast-message {
-  background: var(--dark-surface);
-  color: #fff;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
-  border: 1px solid var(--cli-green);
-  animation: toastInOut 3.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.toast-good { border-left: 4px solid var(--cli-green); }
-.toast-bad { border-left: 4px solid #ff416c; }
-
-@keyframes toastInOut {
-  0% { transform: translateX(120%); opacity: 0; }
-  10% { transform: translateX(0); opacity: 1; }
-  80% { transform: translateX(0); opacity: 1; }
-  100% { transform: translateX(120%); opacity: 0; }
+  justify-content: center;
 }
 
 .balance-card {
   background: linear-gradient(135deg, #101813, #060907);
   border: 1px solid rgba(62, 224, 132, 0.15); 
   border-radius: 18px;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.25rem; /* Tighter padding for mobile */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 180px;
+  min-height: 160px;
   box-shadow: 
     inset 0 1px 2px rgba(255, 255, 255, 0.05),
     0 12px 30px rgba(0, 0, 0, 0.6);
@@ -144,14 +123,14 @@ background: linear-gradient(145deg, #161e19, #0d120e);
 
 .balance-label {
   color: var(--text-gray);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.12em; 
   font-weight: 600;
 }
 
 .balance-amount {
-  font-size: 2.8rem;
+  font-size: 2.2rem; /* Scaled down for mobile */
   font-weight: 800;
   margin: 0.5rem 0 0;
   letter-spacing: -0.04em; 
@@ -160,6 +139,19 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 4px 12px rgba(62, 224, 132, 0.15); 
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 1.75rem;
+  }
+  .balance-card {
+    padding: 2rem 1.5rem;
+    min-height: 180px;
+  }
+  .balance-amount {
+    font-size: 2.8rem;
+  }
 }
 
 .balance-accent-badge {
@@ -174,6 +166,9 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 
+/* =========================================
+   Headers & Top Buttons
+   ========================================= */
 .card-header-row {
   display: flex;
   justify-content: space-between;
@@ -236,29 +231,30 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   transform: translateY(-1px);
 }
 
+/* =========================================
+   Action Button Grid
+   ========================================= */
 .button-group-row {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 1fr 1fr; /* Force 2 columns on mobile too! */
+  gap: 0.75rem; /* Tighter gaps for mobile */
   align-content: center;
-  margin: auto 0; 
-  padding: 0; 
+  margin: auto 0;
+  padding: 0;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 768px) {
   .button-group-row { 
-    grid-template-columns: 1fr 1fr; 
+    gap: 1.25rem;
   }
 }
 
+/* Base button properties shared everywhere */
 .btn {
-  flex: 1 1 42%; 
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 1.1rem;
-  font-size: 1rem; 
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -271,15 +267,39 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Specifically target the chunky grid buttons */
 .button-group-row .btn {
   width: 100%;
-  min-height: 4.5rem;
-  
+  min-height: 4rem; /* Scaled down slightly for mobile */
+  padding: 0.75rem; 
+  font-size: 0.9rem; /* Smaller text to fit mobile 2x2 grid */
 }
 
-.btn .icon { font-size: 1.2rem; }
+.button-group-row .btn .icon { 
+  font-size: 1rem; 
+}
+
+@media (min-width: 768px) {
+  .button-group-row .btn {
+    min-height: 4.5rem;
+    padding: 1.1rem;
+    font-size: 1.05rem; 
+  }
+  .button-group-row .btn .icon { 
+    font-size: 1.2rem; 
+  }
+}
+
 .btn:active { transform: translateY(2px) scale(0.98); }
 
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Button Colors */
 .btn-deposit {
   background: linear-gradient(135deg, #11998e, #38ef7d);
   color: #ffffff;
@@ -323,12 +343,12 @@ background: linear-gradient(145deg, #161e19, #0d120e);
 }
 
 /* =========================================
-   Updated Form Styles (Spacing & Visibility)
+   Forms
    ========================================= */
 .action-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem; /* Standardized gap to fix the unnatural spacing */
+  gap: 1.25rem; 
 }
 
 .action-form h3 { 
@@ -340,30 +360,31 @@ background: linear-gradient(145deg, #161e19, #0d120e);
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Better spacing between label and input */
+  gap: 0.5rem; 
 }
 
 .form-group label {
   font-size: 0.9rem;
-  font-weight: 600; /* Bolder label */
-  color: rgba(255, 255, 255, 0.9); /* Bright off-white for high visibility */
+  font-weight: 600; 
+  color: rgba(255, 255, 255, 0.9); 
   letter-spacing: 0.01em;
 }
 
 .theme-input {
   background: #060807;
   border: 1px solid var(--dark-border);
-  color: #ffffff; /* Bright white input text */
-  padding: 0.85rem 1rem; /* Slightly larger padding for a better feel */
+  color: #ffffff; 
+  padding: 0.85rem 1rem; 
   border-radius: 8px;
-  font-size: 1.05rem; /* Larger text for easier reading */
+  font-size: 1.05rem; 
   font-family: inherit;
   outline: none;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
   transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box; /* Fixes mobile overflow */
 }
 
-/* Make placeholders distinctly visible but not overpowering */
 .theme-input::placeholder {
   color: rgba(255, 255, 255, 0.4); 
 }
@@ -388,7 +409,6 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   transition: filter 0.2s, transform 0.1s;
 }
 .btn-submit:hover { filter: brightness(1.1); }
-.btn-submit:active { transform: scale(0.98); }
 
 .form-error {
   color: #ff416c;
@@ -397,7 +417,57 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   margin: 0;
 }
 
-/* --- Inline Modal & Transaction History List --- */
+/* =========================================
+   Toast Notifications
+   ========================================= */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 9999;
+}
+
+@media (min-width: 768px) {
+  .toast-container {
+    left: auto;
+    right: 2rem;
+    bottom: 2rem;
+    width: 320px;
+  }
+}
+
+.toast-message {
+  background: var(--dark-surface);
+  color: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+  border: 1px solid var(--cli-green);
+  animation: toastInOut 3.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.toast-good { border-left: 4px solid var(--cli-green); }
+.toast-bad { border-left: 4px solid #ff416c; }
+
+@keyframes toastInOut {
+  0% { transform: translateX(120%); opacity: 0; }
+  10% { transform: translateX(0); opacity: 1; }
+  80% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+/* =========================================
+   Transaction History / Ledger
+   ========================================= */
 .scroll-view {
   max-height: 280px;
   overflow-y: auto;
@@ -411,6 +481,98 @@ background: linear-gradient(145deg, #161e19, #0d120e);
 .scroll-view::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 8px; }
 .scroll-view::-webkit-scrollbar-thumb:hover { background-color: var(--text-gray); }
 
+.transaction-history-list { margin-top: 1.5rem; }
+
+.list-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.list-title-row h3 { 
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.activity-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem; /* Tighter on mobile */
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(62, 224, 132, 0.04), rgba(62, 224, 132, 0.01));
+  border: 1px solid rgba(62, 224, 132, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 768px) {
+  .activity-row-item {
+    padding: 1rem 1.25rem;
+  }
+}
+
+.activity-row-item:hover {
+  background: linear-gradient(145deg, rgba(62, 224, 132, 0.07), rgba(62, 224, 132, 0.03));
+  border-color: rgba(62, 224, 132, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.activity-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0; /* Allows truncating text on small screens */
+}
+
+.badge {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0; /* Prevents badge from squishing on small screens */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
+}
+
+@media (min-width: 768px) {
+  .badge {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.badge-deposit {
+  background: rgba(56, 239, 125, 0.15);
+  border: 1px solid rgba(56, 239, 125, 0.3);
+  color: #38ef7d;
+}
+
+.badge-withdrawal {
+  background: rgba(255, 65, 108, 0.15);
+  border: 1px solid rgba(255, 65, 108, 0.3);
+  color: #ff4b2b;
+}
+
+.badge-transfer {
+  background: rgba(142, 45, 226, 0.15);
+  border: 1px solid rgba(142, 45, 226, 0.3);
+  color: #a371f7;
+}
+
+/* Modal specific list items */
 .modal-list {
   display: flex;
   flex-direction: column;
@@ -441,139 +603,38 @@ background: linear-gradient(145deg, #161e19, #0d120e);
   gap: 0.25rem;
   flex: 1; 
   min-width: 0; 
-  padding-right: 1rem;
+  padding-right: 0.5rem;
 }
 
-.tx-desc { 
+.tx-desc, .activity-title { 
   display: block;
   font-size: 0.95rem; 
   font-weight: 600; 
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; /* Adds "..." if text is too long for the mobile screen */
   letter-spacing: 0.01em;
+  margin: 0;
 }
 
-.tx-date { 
+.tx-date, .activity-date { 
   display: block;
   font-size: 0.75rem; 
   font-weight: 500;
   color: var(--text-gray); 
+  margin-top: 0.15rem;
 }
 
-.tx-amt {
-  font-size: 1.05rem;
+.tx-amt, .activity-val {
+  font-size: 1rem; /* Scaled down for mobile */
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   white-space: nowrap; 
 }
 
-.transaction-history-list { margin-top: 1.5rem; }
-
-.list-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.list-title-row h3 { 
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.link-button {
-  background: none;
-  border: none;
-  color: var(--cli-green);
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: color 0.2s;
-}
-.link-button:hover { filter: brightness(1.2); }
-
-.activity-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.activity-row-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-radius: 14px;
-  background: linear-gradient(145deg, rgba(62, 224, 132, 0.04), rgba(62, 224, 132, 0.01));
-  border: 1px solid rgba(62, 224, 132, 0.06);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.activity-row-item:hover {
-  background: linear-gradient(145deg, rgba(62, 224, 132, 0.07), rgba(62, 224, 132, 0.03));
-  border-color: rgba(62, 224, 132, 0.15);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-.activity-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.badge-deposit {
-  background: rgba(56, 239, 125, 0.15);
-  border: 1px solid rgba(56, 239, 125, 0.3);
-  color: #38ef7d;
-}
-
-.badge-withdrawal {
-  background: rgba(255, 65, 108, 0.15);
-  border: 1px solid rgba(255, 65, 108, 0.3);
-  color: #ff4b2b;
-}
-
-.badge-transfer {
-  background: rgba(142, 45, 226, 0.15);
-  border: 1px solid rgba(142, 45, 226, 0.3);
-  color: #a371f7;
-}
-
-.activity-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.activity-date {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-gray);
-  margin-top: 0.15rem;
-}
-
-.activity-val {
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: -0.01em;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+@media (min-width: 768px) {
+  .tx-desc, .activity-title { font-size: 1rem; }
+  .tx-amt, .activity-val { font-size: 1.15rem; }
 }
 
 .activity-val.deposit, .tx-amt.deposit { 
@@ -584,14 +645,6 @@ background: linear-gradient(145deg, #161e19, #0d120e);
 .activity-val.transfer, .tx-amt.transfer { 
   color: #ff416c; 
   text-shadow: 0 0 8px rgba(255, 65, 108, 0.3); 
-}
-
-.err {
-  color: #ff416c;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-top: -0.2rem;
-  margin-bottom: 0.5rem;
 }
 
 /* =========================================
