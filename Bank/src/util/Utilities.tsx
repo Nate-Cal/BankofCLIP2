@@ -107,3 +107,19 @@ export async function withLoading(setLoading: (loading: boolean) => void, fn: ()
     setLoading(false);
   }
 }
+
+export function toast(
+  setToasts: React.Dispatch<React.SetStateAction<{ id: number; msg: string; bad: boolean }[]>>,
+  msg: string,
+  bad = false
+) {
+  const id = Date.now();
+  setToasts(prev => [...prev, { id, msg, bad }]);
+
+  setTimeout(() => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, 3200);
+}
+
+
+
