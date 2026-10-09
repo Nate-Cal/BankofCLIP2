@@ -2,6 +2,8 @@ import { BalanceCard } from "./BalanceCard";
 import { TransactionCenter } from "./TransactionCenter";
 import { TransactionList } from "./TransactionList";
 import { useDashboard } from "../utils/LoadData";
+import { Link } from "react-router-dom";
+
 
 type DashboardProps = {
   user: { id: string; name: string; email: string };
@@ -36,6 +38,14 @@ export function Dashboard({ user, onLogout, setToasts }: DashboardProps) {
 
         <TransactionList transactions={transactions} loading={loading} />
       </div>
+
+      <footer className="footer">
+        <div className="logo">&gt;_ Bank of <b>CLI</b></div>
+        <div className="copyright">Copyright &copy; {new Date().getFullYear()} Bank of CLI</div>
+        <div className="Connect">
+          <Link to="/connect">Connect</Link>
+        </div>
+      </footer>
     </>
   );
 }

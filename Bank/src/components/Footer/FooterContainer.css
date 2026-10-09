@@ -1,0 +1,29 @@
+.footer {
+   display: flex;
+   flex-wrap: wrap;               
+   justify-content: space-between; 
+   align-items: center;           
+   gap: 12px 24px;              
+   padding: 16px;
+   font-size: .75rem;
+   color: var(--mute);
+   border-top: 1px solid var(--line);
+}
+
+.copyright {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: space-between;
+   font-size: .75rem;
+   color: var(--mute)
+}
+
+.Connect a {
+   color: var(--mute);
+  text-decoration: none;
+}
+
+.Connect a:hover {
+   color: #0a7d55;
+   text-decoration: underline;
+}
