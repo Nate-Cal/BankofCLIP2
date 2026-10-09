@@ -53,7 +53,6 @@ export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transacti
   return (
     <section className="actions-card card">
       <div className="card-header-row">
-        <b>Banking Actions</b>
         {activeMenu !== 'MAIN' && (
           <button className="btn-back" onClick={resetMenu} disabled={loading}>
             &larr; Back
