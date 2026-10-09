@@ -5,17 +5,16 @@ import "./Connect.css";
 type Member = {
   name: string;
   role: string;
-  img: string;
 }
 
 const team: Member[] = [
-  { name: "David Villareal", role: "Contract & Types", img: "/"},
-  { name: "William Sancho", role: "Role Here", img: "/"},
-  { name: "Yousef Abuadas", role: "Role Here", img: "/"},
-  { name: "Tuan Dinh", role: "Role Here", img: "/"},
-  { name: "Eric Meitz", role: "Role Here", img: "/"},
-  { name: "Amen Akploh", role: "Role Here", img: "/"},
-  { name: "Nathen Calderon", role: "Authentication Screens", img: "/"},
+  { name: "David Villareal", role: "Contract & Types"},
+  { name: "William Sancho", role: "Transaction Center"},
+  { name: "Yousef Abuadas", role: "Feedback System"},
+  { name: "Tuan Dinh", role: "Design System"},
+  { name: "Eric Meitz", role: "Dashboard"},
+  { name: "Amen Akploh", role: "Services & Mocks"},
+  { name: "Nathen Calderon", role: "Authentication Screens"},
 ];
 
 type State = {openName : string | null};
@@ -53,7 +52,6 @@ export default class Connect extends React.Component<{}, State> {
 
                 {open && (
                   <div className="team-details">
-                    <img src={m.img} alt={m.name} />
                     <p className="role">{m.role}</p>
                   </div>
                 )}
