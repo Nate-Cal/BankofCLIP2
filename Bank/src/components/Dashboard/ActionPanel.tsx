@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Field, Button, setErr, withLoading } from '../../util/Utilities';
 import type { Transaction, MenuMode } from '../../models/banking';
 
@@ -10,10 +10,17 @@ interface ActionPanelProps {
   onProcessTransaction: (amountCents: number, desc: string, to: string) => Promise<void>;
 }
 
-export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transactions, onProcessTransaction }: ActionPanelProps) {
+export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, onProcessTransaction }: ActionPanelProps) {
   const [form, setForm] = useState({ amt: '', desc: '', to: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  // Default to DEPOSIT when this panel mounts if it was on MAIN
+  useEffect(() => {
+    if (activeMenu === 'MAIN' || activeMenu === 'TRANSACTIONS') {
+      setActiveMenu('DEPOSIT');
+    }
+  }, [activeMenu, setActiveMenu]);
 
   const handleSubmit = async () => {
     const amountNum = parseFloat(form.amt);
@@ -36,13 +43,8 @@ export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transacti
       await onProcessTransaction(amountInCents, form.desc, form.to);
     });
 
-    resetMenu();
-  };
-
-  const resetMenu = () => {
     setForm({ amt: '', desc: '', to: '' });
     setErrors({});
-    setActiveMenu('MAIN');
   };
 
   const formTitle = 
@@ -51,105 +53,76 @@ export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transacti
     'Send Money';
 
   return (
-    <section className="actions-card card">{}
-      {activeMenu !== 'MAIN' && (
-        <div className="card-header-row">
-          <button className="btn-back" onClick={resetMenu} disabled={loading}>
-            &larr; Back
-          </button>
-        </div>
-      )}
+    <section className="actions-card card">
+      
+      {/* Sleek Segmented Control for Professional UIs */}
+      <div className="segmented-control">
+        <button 
+          className={`segment-btn ${activeMenu === 'DEPOSIT' ? 'active' : ''}`} 
+          onClick={() => { setActiveMenu('DEPOSIT'); setErrors({}); }}
+        >
+          Deposit
+        </button>
+        <button 
+          className={`segment-btn ${activeMenu === 'WITHDRAWAL' ? 'active' : ''}`} 
+          onClick={() => { setActiveMenu('WITHDRAWAL'); setErrors({}); }}
+        >
+          Withdraw
+        </button>
+        <button 
+          className={`segment-btn ${activeMenu === 'TRANSFER' ? 'active' : ''}`} 
+          onClick={() => { setActiveMenu('TRANSFER'); setErrors({}); }}
+        >
+          Transfer
+        </button>
+      </div>
 
-      {activeMenu === 'MAIN' && (
-        <div className="button-group-row">
-          <button className="btn btn-deposit" onClick={() => setActiveMenu('DEPOSIT')}>
-            <span className="icon">↓</span> Deposit
-          </button>
-          <button className="btn btn-withdrawal" onClick={() => setActiveMenu('WITHDRAWAL')}>
-            <span className="icon">↑</span> Withdraw
-          </button>
-          <button className="btn btn-transfer" onClick={() => setActiveMenu('TRANSFER')}>
-            <span className="icon">↗</span> Transfer
-          </button>
-          <button className="btn btn-transactions" onClick={() => setActiveMenu('TRANSACTIONS')}>
-            <span className="icon">⇄</span> History
-          </button>
-        </div>
-      )}
+      <div className="action-form">
+        <h3 style={{ marginTop: '0.5rem' }}>{formTitle}</h3>
 
-      {['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'].includes(activeMenu) && (
-        <div className="action-form">
-          <h3>{formTitle}</h3>
-
-          {activeMenu === 'TRANSFER' && (
-            <div className="form-group">
-              <Field
-                id="to"
-                label="Recipient Email/Username"
-                value={form.to}
-                onChange={v => setForm({ ...form, to: v })}
-                error={errors.to}
-                attrs={{ placeholder: "e.g. billy@bankofcli.dev", className: "theme-input", disabled: loading }}
-              />
-            </div>
-          )}
-
+        {activeMenu === 'TRANSFER' && (
           <div className="form-group">
             <Field
-              id="amt"
-              label="Amount (USD)"
-              type="number"
-              value={form.amt}
-              onChange={v => setForm({ ...form, amt: v })}
-              error={errors.amt}
-              attrs={{ placeholder: "0.00", min: "0.01", step: "0.01", className: "theme-input", disabled: loading }}
+              id="to"
+              label="Recipient Email/Username"
+              value={form.to}
+              onChange={v => setForm({ ...form, to: v })}
+              error={errors.to}
+              attrs={{ placeholder: "e.g. grace@bankofcli.dev", className: "theme-input", disabled: loading }}
             />
           </div>
+        )}
 
-          <div className="form-group">
-            <Field
-              id="desc"
-              label="Description (Optional)"
-              value={form.desc}
-              onChange={v => setForm({ ...form, desc: v })}
-              attrs={{ placeholder: "e.g. Rent, Utilities", className: "theme-input", disabled: loading }}
-            />
-          </div>
-          
-          <Button
-            id="submit-action"
-            label={`Submit ${activeMenu.toLowerCase()}`}
-            onClick={handleSubmit}
-            loading={loading}
-            extra={`btn-${activeMenu.toLowerCase()} btn-submit`}
+        <div className="form-group">
+          <Field
+            id="amt"
+            label="Amount (USD)"
+            type="number"
+            value={form.amt}
+            onChange={v => setForm({ ...form, amt: v })}
+            error={errors.amt}
+            attrs={{ placeholder: "0.00", min: "0.01", step: "0.01", className: "theme-input", disabled: loading }}
           />
         </div>
-      )}
 
-      {activeMenu === 'TRANSACTIONS' && (
-        <div className="modal-view scroll-view">
-          <h3>Transaction History</h3>
-          {transactions.length === 0 ? (
-            <p className="no-data">No transactions found.</p>
-          ) : (
-            <div className="modal-list">
-              {transactions.map((tx) => (
-                <div key={tx.id} className="modal-list-item">
-                  <div className="tx-details">
-                    <span className="tx-desc">{tx.description}</span>
-                    <span className="tx-date">
-                      {new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <span className={`tx-amt ${tx.type.toLowerCase()}`}>
-                    {tx.direction === 'CREDIT' ? '+' : '-'}${(tx.amountCents / 100).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="form-group">
+          <Field
+            id="desc"
+            label="Description (Optional)"
+            value={form.desc}
+            onChange={v => setForm({ ...form, desc: v })}
+            attrs={{ placeholder: "e.g. Rent, Utilities", className: "theme-input", disabled: loading }}
+          />
         </div>
-      )}
+        
+        <Button
+          id="submit-action"
+          label={`Submit ${activeMenu.toLowerCase()}`}
+          onClick={handleSubmit}
+          loading={loading}
+          extra={`btn-submit`}
+        />
+      </div>
     </section>
   );
 }

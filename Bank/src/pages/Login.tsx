@@ -1,113 +1,185 @@
-import { useState } from "react";
-import { AuthService } from "../services/AuthService";
-import { useToast } from "../components/Toast/ToastContainer";
-import { Button } from "../util/Utilities";
-import Footer from "../components/Footer/FooterContainer";
-import type { User } from "../types";
-import "./Login.css";
+import { useState } from 'react';
+import { wait } from '../util/Utilities'; 
+import { useToast } from '../components/Toast/ToastContainer';
 
+interface LoginProps {
+  setUser: (user: any) => void;
+}
 
-
-
-const auth = new AuthService();
-
-
-export default function Login({ setUser }: { setUser: (user: User) => void }) {
+export default function Login({ setUser }: LoginProps) {
   const { showToastMessage } = useToast();
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [form, setForm] = useState({ name: "", email: "", pw: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const reg = authMode === "register";
+  // Real-time password validation logic
+  const reqLength = password.length >= 8;
+  const reqNum = /\d/.test(password);
+  const reqSpec = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const isPasswordValid = reqLength && reqNum && reqSpec;
 
-  const setErr = (field: string, msg: string) => {
-    setErrors(prev => ({ ...prev, [field]: msg }));
-    return msg === "";
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-  const handleSubmit = async () => {
-    const { name, email, pw } = form;
+    // 1. Check if all required fields are filled
+    if (!email || !password || (isRegister && !name)) {
+      setError('Please fill out all fields.');
+      return;
+    }
 
-    let ok = setErr("email", /^\S+@\S+\.\S+$/.test(email) ? "" : "Enter a valid email.");
-    ok = setErr("pw", pw.length >= 8 ? "" : "Minimum 8 characters.") && ok;
-    if (reg) ok = setErr("name", name.trim() ? "" : "Name is required.") && ok;
-    if (!ok) return;
+    // 2. If registering, strictly enforce password rules
+    if (isRegister && !isPasswordValid) {
+      setError('Please meet all password requirements.');
+      return;
+    }
 
-    setLoading(true);
-    try {
-      const res = reg
-        ? await auth.register(name.trim(), email.trim(), pw)
-        : await auth.login(email.trim(), pw);
-
-      if (!res.ok || !res.data) {
-        showToastMessage(res.error?.message ?? "Something went wrong.", true);
+    // 3. NEW: If signing in, strictly check against demo credentials
+    if (!isRegister) {
+      if (email !== 'ada@bankofcli.dev' || password !== 'password123') {
+        setError('Invalid email or password. Please try again.');
         return;
       }
+    }
 
-      showToastMessage(`Welcome, ${res.data.name.split(" ")[0]}!`);
-      setUser(res.data);
-    } finally {
+    setLoading(true);
+
+    try {
+      // Simulate network request
+      await wait(1200);
+      
+      const mockUser = {
+        id: `u_${Date.now()}`,
+        name: isRegister ? name : 'Ada Lovelace',
+        email: email
+      };
+      
+      showToastMessage(isRegister ? "Account created successfully!" : "Welcome back!", false);
+      setUser(mockUser);
+    } catch (err) {
+      setError('Authentication failed. Please try again.');
       setLoading(false);
     }
   };
 
+  const handleTabSwitch = (toRegister: boolean) => {
+    setIsRegister(toRegister);
+    setError('');
+    setPassword(''); // Reset password to clear checklist
+  };
+
   return (
     <div className="auth">
-      <div className="card" onSubmit = {handleSubmit}>
-        <div className="logo">&gt;_ Bank of <b>CLI</b></div>
+      <div className="card card-animate">
+        
+        <div className="logo">
+          &gt;_ Bank of <b>CLI</b>
+        </div>
 
         <div className="tabs">
-          <button className={authMode === "login" ? "on" : ""} onClick={() => setAuthMode("login")}>
+          <button 
+            type="button" 
+            className={!isRegister ? 'on' : ''} 
+            onClick={() => handleTabSwitch(false)}
+          >
             Sign in
           </button>
-          <button className={authMode === "register" ? "on" : ""} onClick={() => setAuthMode("register")}>
+          <button 
+            type="button" 
+            className={isRegister ? 'on' : ''} 
+            onClick={() => handleTabSwitch(true)}
+          >
             Register
           </button>
         </div>
 
-        {reg && (
-          <div>
-            <label>Full name</label>
-            <input
-              value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
+        <form onSubmit={handleSubmit} className="form-animate">
+          {isRegister && (
+            <div className="input-group fade-in-down">
+              <label>Full name</label>
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ada Lovelace"
+                disabled={loading}
+              />
+            </div>
+          )}
+
+          <div className="input-group fade-in-down" style={{ animationDelay: '0.1s' }}>
+            <label>Email</label>
+            <input 
+              type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ada@bankofcli.dev"
+              disabled={loading}
             />
-            {errors.name && <div className="err">{errors.name}</div>}
           </div>
-        )}
 
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={e => setForm({ ...form, email: e.target.value })}
-          />
-          {errors.email && <div className="err">{errors.email}</div>}
+          <div className="input-group fade-in-down" style={{ animationDelay: '0.2s' }}>
+            <label>Password</label>
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={loading}
+            />
+          </div>
+
+          {/* REAL-TIME CHECKLIST ANIMATION */}
+          {isRegister && (
+            <div className="password-checklist fade-in-down" style={{ animationDelay: '0.3s' }}>
+              <div className={`check-item ${reqLength ? 'valid' : ''}`}>
+                <CheckIcon isValid={reqLength} />
+                <span>8+ characters</span>
+              </div>
+              <div className={`check-item ${reqNum ? 'valid' : ''}`}>
+                <CheckIcon isValid={reqNum} />
+                <span>At least 1 number</span>
+              </div>
+              <div className={`check-item ${reqSpec ? 'valid' : ''}`}>
+                <CheckIcon isValid={reqSpec} />
+                <span>At least 1 special character</span>
+              </div>
+            </div>
+          )}
+
+          {/* ERROR DISPLAY */}
+          {error && <div className="err fade-in-down">{error}</div>}
+
+          <button 
+            type="submit" 
+            className="btn fade-in-down" 
+            disabled={loading || (isRegister && !isPasswordValid)}
+            style={{ animationDelay: '0.4s' }}
+          >
+            {loading ? <span className="spin" /> : (isRegister ? 'Create account' : 'Sign in')}
+          </button>
+        </form>
+
+        <div className="hint fade-in-down" style={{ animationDelay: '0.5s' }}>
+          demo: ada@bankofcli.dev / password123
         </div>
 
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={form.pw}
-            onChange={e => setForm({ ...form, pw: e.target.value })}
-          />
-          {errors.pw && <div className="err">{errors.pw}</div>}
-        </div>
-
-        <Button
-          id="go"
-          label={reg ? "Create account" : "Sign in"}
-          onClick={handleSubmit}
-          loading={loading}
-        />
-
-        <div className="hint mono">demo: slagathor@bankofcli.dev / password123</div>
       </div>
-      
-      <Footer/>
+    </div>
+  );
+}
+
+// Helper SVG Icon Component for the Checklist
+function CheckIcon({ isValid }: { isValid: boolean }) {
+  return (
+    <div className={`check-circle ${isValid ? 'filled' : ''}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
     </div>
   );
 }

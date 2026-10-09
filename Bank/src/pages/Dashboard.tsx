@@ -10,7 +10,6 @@ import type { Account, User } from '../types';
 import type { Transaction, MenuMode } from '../models/banking'; 
 
 import './Dashboard.css';
-
 import mockDashboardData from '../mocks/dashboard.json';
 
 interface DashboardProps {
@@ -18,11 +17,20 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
+// Expanded App-Level View State
+type ViewMode = 'ACCOUNT_SELECT' | 'DASHBOARD' | 'ACTIONS' | 'HISTORY';
+
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const { showToastMessage } = useToast();
-  const [activeMenu, setActiveMenu] = useState<MenuMode>('MAIN');
   
-  const [account, setAccount] = useState<Account | null>(null);
+  // App Routing
+  const [currentView, setCurrentView] = useState<ViewMode>('ACCOUNT_SELECT');
+  const [activeMenu, setActiveMenu] = useState<MenuMode>('DEPOSIT');
+  
+  // Account Data State
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [activeAccount, setActiveAccount] = useState<any>(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -36,8 +44,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       setLoading(true);
       setError(null);
       try {
-        // Increased delay to 1.2 seconds so you can see the skeleton loader!
-        await wait(1200);
+        await wait(1000); // Simulated network delay
         
         if (!mockDashboardData.account.ok || !mockDashboardData.transactions.ok) {
           throw new Error('Unable to load mock data.');
@@ -46,8 +53,23 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         if (active) {
           const mockAccount = mockDashboardData.account.data;
           
-          setAccount(mockAccount as unknown as Account);
-          setBalanceCents(Math.round(mockAccount.balance * 100));
+          // Generate a professional multi-account list based on the mock data
+          const fetchedAccounts = [
+            {
+              id: mockAccount.id,
+              name: 'Checking Account',
+              balanceCents: Math.round(mockAccount.balance * 100),
+              mask: '•••• 0421'
+            },
+            {
+              id: 'a2',
+              name: 'High-Yield Savings',
+              balanceCents: 2450075, // $24,500.75
+              mask: '•••• 8912'
+            }
+          ];
+          
+          setAccounts(fetchedAccounts);
           
           const mappedTransactions: Transaction[] = mockDashboardData.transactions.data.map((tx) => ({
             id: tx.id,
@@ -71,6 +93,12 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     loadDashboardData();
   }, [retry]);
 
+  const handleSelectAccount = (acc: any) => {
+    setActiveAccount(acc);
+    setBalanceCents(acc.balanceCents);
+    setCurrentView('DASHBOARD');
+  };
+
   const handleProcessTransaction = async (amountInCents: number, desc: string, to: string) => {
     await wait(800); 
 
@@ -80,7 +108,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
     const newTx: Transaction = {
       id: `t_${Date.now()}`,
-      accountId: account?.id || 'a1',
+      accountId: activeAccount?.id || 'a1',
       description: desc.trim() || defaultDesc,
       amountCents: amountInCents,
       type: activeMenu as Transaction['type'],
@@ -93,6 +121,9 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
     const actionText = activeMenu === 'DEPOSIT' ? 'deposited' : activeMenu === 'WITHDRAWAL' ? 'withdrawn' : 'transferred';
     showToastMessage(`Successfully ${actionText} $${(amountInCents / 100).toFixed(2)}`, false);
+    
+    // Auto-redirect to dashboard to see the new balance/history
+    setCurrentView('DASHBOARD');
   };
 
   const handleLogout = () => {
@@ -102,15 +133,27 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
   return (
     <main className="dashboard dark-theme" aria-label="Banking dashboard">
-      {/* The Header always loads instantly because we already have the User data */}
-      <header className='dashboard-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className='dashboard-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ marginBottom: 0, lineHeight: '1.2' }}>
-            <span style={{ color: 'var(--text-gray)', fontSize: '1.1rem', display: 'block', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Welcome back,
-            </span>
-            <span className="gradient-name">{user.name}</span>
-          </h1>
+          {currentView === 'ACCOUNT_SELECT' ? (
+            <h1 style={{ marginBottom: 0, lineHeight: '1.2' }}>
+              <span style={{ color: 'var(--text-gray)', fontSize: '1.1rem', display: 'block', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Welcome back,
+              </span>
+              <span className="gradient-name">{user.name}</span>
+            </h1>
+          ) : (
+            <h1 style={{ marginBottom: 0, lineHeight: '1.2' }}>
+              <button 
+                className="link-button" 
+                onClick={() => setCurrentView('ACCOUNT_SELECT')} 
+                style={{ fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              >
+                &larr; Switch Account
+              </button>
+              <span className="gradient-name">{activeAccount?.name}</span>
+            </h1>
+          )}
         </div>
         
         <button type="button" className='btn-logout' onClick={handleLogout}>
@@ -118,64 +161,106 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         </button>
       </header>
 
+      {/* Render Navigation Bar ONLY if an account is selected */}
+      {currentView !== 'ACCOUNT_SELECT' && (
+        <nav className="top-nav-bar fade-in">
+          <button 
+            className={`nav-tab ${currentView === 'DASHBOARD' ? 'active' : ''}`}
+            onClick={() => setCurrentView('DASHBOARD')}
+          >
+            Dashboard
+          </button>
+          <button 
+            className={`nav-tab ${currentView === 'ACTIONS' ? 'active' : ''}`}
+            onClick={() => setCurrentView('ACTIONS')}
+          >
+            Move Money
+          </button>
+          <button 
+            className={`nav-tab ${currentView === 'HISTORY' ? 'active' : ''}`}
+            onClick={() => setCurrentView('HISTORY')}
+          >
+            History
+          </button>
+        </nav>
+      )}
+
       {error ? (
         <div className="dashboard-card dashboard-error" role="alert">
           <p>{error}</p>
-          <button type="button" className="btn btn-transactions" onClick={() => setRetry((value) => value + 1)}>
+          <button type="button" className="btn btn-submit" onClick={() => setRetry((value) => value + 1)}>
             Try again
           </button>
         </div>
       ) : loading ? (
-        /* =========================================
-           SKELETON LOADER UI 
-           ========================================= */
-        <>
-          <div className="dashboard-grid">
-            <div className="balance-card skeleton-card">
-              <div className="skeleton-line" style={{ width: '120px', height: '1rem', marginBottom: 'auto' }}></div>
-              <div className="skeleton-line" style={{ width: '220px', height: '3.2rem', marginTop: '1rem' }}></div>
+        /* Skeleton UI Loader */
+        <div className="account-cards-grid">
+          <div className="card skeleton-card" style={{ height: '180px' }}>
+            <div className="skeleton-line" style={{ width: '120px', height: '1.5rem' }}></div>
+            <div className="skeleton-line" style={{ width: '200px', height: '3rem', marginTop: 'auto' }}></div>
+          </div>
+          <div className="card skeleton-card" style={{ height: '180px' }}>
+            <div className="skeleton-line" style={{ width: '120px', height: '1.5rem' }}></div>
+            <div className="skeleton-line" style={{ width: '200px', height: '3rem', marginTop: 'auto' }}></div>
+          </div>
+        </div>
+      ) : (
+        /* Dynamic App Views based on Navigation */
+        <div className="view-container fade-in">
+          
+          {currentView === 'ACCOUNT_SELECT' && (
+            <div className="account-cards-grid">
+              {accounts.map(acc => (
+                <div key={acc.id} className="card account-selection-card" onClick={() => handleSelectAccount(acc)}>
+                  <div className="acc-info">
+                    <h3 className="acc-name">{acc.name}</h3>
+                    <span className="acc-mask">{acc.mask}</span>
+                  </div>
+                  <div className="acc-bal">
+                    ${(acc.balanceCents / 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <div className="card skeleton-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', justifyContent: 'center' }}>
-              <div className="button-group-row" style={{ margin: '0' }}>
-                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
-                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
-                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
-                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
+          )}
+
+          {currentView === 'DASHBOARD' && (
+            <div className="dashboard-grid">
+              <BalanceCard balanceCents={balanceCents} />
+              <div className="card" style={{ padding: '1.25rem' }}>
+                <RecentActivity 
+                  transactions={transactions.slice(0, 3)} 
+                  setActiveMenu={() => {}} 
+                />
+                <button className="link-button" onClick={() => setCurrentView('HISTORY')} style={{ marginTop: '1rem', width: '100%', textAlign: 'center' }}>
+                  View All History &rarr;
+                </button>
               </div>
             </div>
-          </div>
-
-          <div className="card skeleton-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="skeleton-line" style={{ width: '160px', height: '1.5rem', marginBottom: '0.5rem' }}></div>
-            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
-            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
-            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
-          </div>
-        </>
-      ) : (
-        /* =========================================
-           ACTUAL DASHBOARD CONTENT 
-           ========================================= */
-        <>
-          <div className="dashboard-grid">
-            <BalanceCard balanceCents={balanceCents} />
-            <ActionPanel 
-              balanceCents={balanceCents}
-              activeMenu={activeMenu}
-              setActiveMenu={setActiveMenu}
-              transactions={transactions}
-              onProcessTransaction={handleProcessTransaction}
-            />
-          </div>
-
-          {activeMenu !== 'TRANSACTIONS' && (
-            <RecentActivity 
-              transactions={transactions} 
-              setActiveMenu={setActiveMenu} 
-            />
           )}
-        </>
+
+          {currentView === 'ACTIONS' && (
+            <div className="dashboard-grid single-col">
+              <ActionPanel 
+                balanceCents={balanceCents}
+                activeMenu={activeMenu}
+                setActiveMenu={setActiveMenu}
+                transactions={transactions}
+                onProcessTransaction={handleProcessTransaction}
+              />
+            </div>
+          )}
+
+          {currentView === 'HISTORY' && (
+            <div className="card history-view">
+               <RecentActivity 
+                  transactions={transactions} 
+                  setActiveMenu={() => {}} 
+                />
+            </div>
+          )}
+
+        </div>
       )}
       
       <Footer/>
