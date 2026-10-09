@@ -163,6 +163,7 @@ body {
   letter-spacing: -0.04em; /* Tighter spacing on the big balance */
   background: linear-gradient(to right, #ffffff, #e0e0e0);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 8px 16px rgba(0, 198, 255, 0.15); 
 }
