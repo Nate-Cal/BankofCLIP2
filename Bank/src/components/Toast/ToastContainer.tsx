@@ -1,5 +1,8 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 import "./styles.css";
+import errorSound from '../../assets/error.mp3';
+import successSound from '../../assets/success.mp3'
+
 
 //TODO: for now keep isError, but change to a union of string states later
 type Toast = {
@@ -22,12 +25,19 @@ export function useToast(): ToastContextValue {
 }
 
 export function ToastContainer({ children }: { children: React.ReactNode }) {
+  const successRef = useRef<HTMLAudioElement>(null);
+  const errorRef = useRef<HTMLAudioElement>(null);
   const [showToast, setShowToast] = useState<boolean>(false);
   const [toast, setToast] = useState<Toast>({ message: "", isError: false });
 
   // isError determines whether the Toast is styled like an error
   // or styled like a success message
-  const showToastMessage = useCallback((message:string, isError:boolean = false) => {
+  const showToastMessage = (message: string, isError: boolean = false) => {
+    const audio = isError ? errorRef.current : successRef.current;
+    if (audio) {
+      audio.currentTime = 0; // Play from the beginning
+      void audio.play().catch(() => {});
+    }
 
     setToast({ message, isError });
     setShowToast(true);
@@ -35,11 +45,13 @@ export function ToastContainer({ children }: { children: React.ReactNode }) {
     window.setTimeout(() => {
         setShowToast(false);
       }, 3000);
-  }, []);
+  };
 
   return (
     <ToastContext.Provider value={{ showToastMessage }}>
       {children}
+      <audio ref={successRef} src={successSound} preload="auto" />
+      <audio ref={errorRef} src={errorSound} preload="auto"/>
       {showToast && (
         <div
           className={`toast ${toast.isError ? "toast--error" : "toast--success"}`}
