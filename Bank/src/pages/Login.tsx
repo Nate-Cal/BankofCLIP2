@@ -104,7 +104,7 @@ export default function Login({ setUser }: { setUser: (user: User) => void }) {
           loading={loading}
         />
 
-        <div className="hint mono">demo: ada@bankofcli.dev / password123</div>
+        <div className="hint mono">demo: slagathor@bankofcli.dev / password123</div>
       </div>
       
       <Footer/>
