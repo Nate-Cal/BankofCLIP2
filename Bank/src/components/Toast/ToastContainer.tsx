@@ -35,6 +35,7 @@ export function ToastContainer({ children }: { children: React.ReactNode }) {
   const showToastMessage = (message: string, isError: boolean = false) => {
     const audio = isError ? errorRef.current : successRef.current;
     if (audio) {
+      audio.volume = 0.35;
       audio.currentTime = 0; // Play from the beginning
       void audio.play().catch(() => {});
     }
