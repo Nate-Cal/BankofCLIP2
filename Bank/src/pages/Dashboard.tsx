@@ -6,7 +6,7 @@ import { ActionPanel } from '../components/Dashboard/ActionPanel';
 import { RecentActivity } from '../components/Dashboard/RecentActivity';
 import Footer from '../components/Footer/FooterContainer';
 
-import type { Account, User } from '../types';
+import type { User } from '../types';
 import type { Transaction, MenuMode } from '../models/banking'; 
 
 import './Dashboard.css';
@@ -38,7 +38,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const [balanceCents, setBalanceCents] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  useEffect(() => {
+useEffect(() => {
     let active = true;
     async function loadDashboardData() {
       setLoading(true);
@@ -46,34 +46,26 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       try {
         await wait(1000); // Simulated network delay
         
-        if (!mockDashboardData.account.ok || !mockDashboardData.transactions.ok) {
+        // Notice we are checking mockDashboardData.accounts now
+        if (!mockDashboardData.accounts.ok || !mockDashboardData.transactions.ok) {
           throw new Error('Unable to load mock data.');
         }
         
         if (active) {
-          const mockAccount = mockDashboardData.account.data;
-          
-          // Generate a professional multi-account list based on the mock data
-          const fetchedAccounts = [
-            {
-              id: mockAccount.id,
-              name: 'Checking Account',
-              balanceCents: Math.round(mockAccount.balance * 100),
-              mask: '•••• 0421'
-            },
-            {
-              id: 'a2',
-              name: 'High-Yield Savings',
-              balanceCents: 2450075, // $24,500.75
-              mask: '•••• 8912'
-            }
-          ];
+          // Dynamically map all accounts from the JSON
+          const fetchedAccounts = mockDashboardData.accounts.data.map((acc) => ({
+            id: acc.id,
+            name: acc.name,
+            balanceCents: Math.round(acc.balance * 100),
+            mask: acc.mask
+          }));
           
           setAccounts(fetchedAccounts);
           
+          // Map all transactions
           const mappedTransactions: Transaction[] = mockDashboardData.transactions.data.map((tx) => ({
             id: tx.id,
-            accountId: mockAccount.id,
+            accountId: tx.accountId, // Now maps to specific accounts
             description: tx.description,
             amountCents: Math.round(tx.amount * 100),
             type: tx.type === 'WITHDRAW' ? 'WITHDRAWAL' : (tx.type as Transaction['type']),
@@ -254,7 +246,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           {currentView === 'HISTORY' && (
             <div className="card history-view">
                <RecentActivity 
-                  transactions={transactions} 
+                  transactions={transactions.filter(tx => tx.accountId === activeAccount?.id)}
                   setActiveMenu={() => {}} 
                 />
             </div>
