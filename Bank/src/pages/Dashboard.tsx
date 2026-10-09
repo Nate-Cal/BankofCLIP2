@@ -36,7 +36,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       setLoading(true);
       setError(null);
       try {
-        await wait(600);
+        // Increased delay to 1.2 seconds so you can see the skeleton loader!
+        await wait(1200);
         
         if (!mockDashboardData.account.ok || !mockDashboardData.transactions.ok) {
           throw new Error('Unable to load mock data.');
@@ -101,6 +102,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
   return (
     <main className="dashboard dark-theme" aria-label="Banking dashboard">
+      {/* The Header always loads instantly because we already have the User data */}
       <header className='dashboard-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ marginBottom: 0, lineHeight: '1.2' }}>
@@ -123,23 +125,51 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             Try again
           </button>
         </div>
+      ) : loading ? (
+        /* =========================================
+           SKELETON LOADER UI 
+           ========================================= */
+        <>
+          <div className="dashboard-grid">
+            <div className="balance-card skeleton-card">
+              <div className="skeleton-line" style={{ width: '120px', height: '1rem', marginBottom: 'auto' }}></div>
+              <div className="skeleton-line" style={{ width: '220px', height: '3.2rem', marginTop: '1rem' }}></div>
+            </div>
+            
+            <div className="card skeleton-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', justifyContent: 'center' }}>
+              <div className="button-group-row" style={{ margin: '0' }}>
+                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
+                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
+                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
+                <div className="skeleton-line" style={{ width: '100%', height: '4.5rem', borderRadius: '14px' }}></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card skeleton-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="skeleton-line" style={{ width: '160px', height: '1.5rem', marginBottom: '0.5rem' }}></div>
+            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
+            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
+            <div className="skeleton-line" style={{ width: '100%', height: '4.2rem', borderRadius: '12px' }}></div>
+          </div>
+        </>
       ) : (
+        /* =========================================
+           ACTUAL DASHBOARD CONTENT 
+           ========================================= */
         <>
           <div className="dashboard-grid">
             <BalanceCard balanceCents={balanceCents} />
-            
-            {!loading && (
-              <ActionPanel 
-                balanceCents={balanceCents}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                transactions={transactions}
-                onProcessTransaction={handleProcessTransaction}
-              />
-            )}
+            <ActionPanel 
+              balanceCents={balanceCents}
+              activeMenu={activeMenu}
+              setActiveMenu={setActiveMenu}
+              transactions={transactions}
+              onProcessTransaction={handleProcessTransaction}
+            />
           </div>
 
-          {!loading && activeMenu !== 'TRANSACTIONS' && (
+          {activeMenu !== 'TRANSACTIONS' && (
             <RecentActivity 
               transactions={transactions} 
               setActiveMenu={setActiveMenu} 

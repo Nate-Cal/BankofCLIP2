@@ -59,14 +59,17 @@ body {
 }
 
 .card {
-  background: linear-gradient(145deg, #161e19, #0d120e);
+background: linear-gradient(145deg, #161e19, #0d120e);
   border: 1px solid rgba(62, 224, 132, 0.08);
   border-radius: 18px;
   padding: 1.75rem;
   box-shadow: 
     inset 0 1px 1px rgba(255, 255, 255, 0.05), 
     0 16px 32px rgba(0, 0, 0, 0.6),            
-    0 4px 8px rgba(0, 0, 0, 0.3);              
+    0 4px 8px rgba(0, 0, 0, 0.3);   
+  display: flex;
+  flex-direction: column;
+  justify-content: center;           
 }
 
 .spin {
@@ -179,6 +182,11 @@ body {
   font-size: 1.1rem;
 }
 
+.card-header-row:empty {
+  display: none;
+  margin: 0;
+}
+
 .card-header-row h3 {
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -229,15 +237,18 @@ body {
 }
 
 .button-group-row {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  flex-wrap: wrap; 
-  padding-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-content: center;
+  margin: auto 0; 
+  padding: 0; 
 }
 
 @media (min-width: 480px) {
-  .button-group-row { flex-direction: row; }
+  .button-group-row { 
+    grid-template-columns: 1fr 1fr; 
+  }
 }
 
 .btn {
@@ -258,6 +269,12 @@ body {
   position: relative;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-group-row .btn {
+  width: 100%;
+  min-height: 4.5rem;
+  
 }
 
 .btn .icon { font-size: 1.2rem; }
@@ -575,4 +592,25 @@ body {
   font-weight: 500;
   margin-top: -0.2rem;
   margin-bottom: 0.5rem;
+}
+
+/* =========================================
+   Loading Skeleton Styles
+   ========================================= */
+.skeleton-card {
+  border: 1px solid rgba(62, 224, 132, 0.04) !important;
+  background: #0b0f0d !important;
+  box-shadow: none !important;
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #121814 25%, #1a261f 50%, #121814 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 6px;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

@@ -3,7 +3,6 @@ import "./styles.css";
 import errorSound from '../../assets/error.mp3';
 import successSound from '../../assets/success.mp3'
 
-
 //TODO: for now keep isError, but change to a union of string states later
 type Toast = {
   message: string;
@@ -27,16 +26,46 @@ export function useToast(): ToastContextValue {
 export function ToastContainer({ children }: { children: React.ReactNode }) {
   const successRef = useRef<HTMLAudioElement>(null);
   const errorRef = useRef<HTMLAudioElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null); // Reference for the Web Audio API Context
+
   const [showToast, setShowToast] = useState<boolean>(false);
   const [toast, setToast] = useState<Toast>({ message: "", isError: false });
+
+  // Helper function to intercept the left-sided audio and force it to play in both ears
+  const fixAudioChannels = (audioElement: HTMLAudioElement) => {
+    // 1. Initialize AudioContext only after the user interacts with the app
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    // 2. Prevent routing the exact same audio element multiple times
+    if (!(audioElement as any)._isRouted) {
+      const source = audioCtxRef.current.createMediaElementSource(audioElement);
+      
+      // Force it to mono so the left channel duplicates to the right speaker
+      source.channelCount = 1;
+      source.channelCountMode = "explicit";
+      source.connect(audioCtxRef.current.destination);
+      
+      (audioElement as any)._isRouted = true;
+    }
+
+    // 3. Ensure the context is running (browsers suspend it before user interaction)
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+  };
 
   // isError determines whether the Toast is styled like an error
   // or styled like a success message
   const showToastMessage = (message: string, isError: boolean = false) => {
     const audio = isError ? errorRef.current : successRef.current;
+    
     if (audio) {
-      audio.volume = 0.35;
-      audio.currentTime = 0; // Play from the beginning
+      fixAudioChannels(audio); 
+      
+      audio.volume = 0.15; 
+      audio.currentTime = 0; 
       void audio.play().catch(() => {});
     }
 
@@ -51,8 +80,10 @@ export function ToastContainer({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToastMessage }}>
       {children}
-      <audio ref={successRef} src={successSound} preload="auto" />
-      <audio ref={errorRef} src={errorSound} preload="auto"/>
+      {/* crossOrigin="anonymous" is required when manipulating audio via the Web Audio API */}
+      <audio ref={successRef} src={successSound} preload="auto" crossOrigin="anonymous" />
+      <audio ref={errorRef} src={errorSound} preload="auto" crossOrigin="anonymous" />
+      
       {showToast && (
         <div
           className={`toast ${toast.isError ? "toast--error" : "toast--success"}`}

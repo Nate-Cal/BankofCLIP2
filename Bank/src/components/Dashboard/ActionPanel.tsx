@@ -51,14 +51,14 @@ export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transacti
     'Send Money';
 
   return (
-    <section className="actions-card card">
-      <div className="card-header-row">
-        {activeMenu !== 'MAIN' && (
+    <section className="actions-card card">{}
+      {activeMenu !== 'MAIN' && (
+        <div className="card-header-row">
           <button className="btn-back" onClick={resetMenu} disabled={loading}>
             &larr; Back
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {activeMenu === 'MAIN' && (
         <div className="button-group-row">
