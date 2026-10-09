@@ -89,7 +89,7 @@ export function ActionPanel({ balanceCents, activeMenu, setActiveMenu, transacti
                 value={form.to}
                 onChange={v => setForm({ ...form, to: v })}
                 error={errors.to}
-                attrs={{ placeholder: "e.g. grace@bankofcli.dev", className: "theme-input", disabled: loading }}
+                attrs={{ placeholder: "e.g. billy@bankofcli.dev", className: "theme-input", disabled: loading }}
               />
             </div>
           )}

@@ -30,7 +30,7 @@
         "type": "TRANSFER",
         "amount": 250.0,
         "date": "2026-09-22T09:15:00Z",
-        "description": "Transfer to grace@bankofcli.dev"
+        "description": "Transfer to billy@bankofcli.dev"
       }
     ]
   }
