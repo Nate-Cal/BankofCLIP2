@@ -1,7 +1,7 @@
 .toast {
-  --toast-color: #48b087;
-  --toast-border: #41c18b;
-  --toast-panel: #d1eade;
+  --toast-color: var(--acc);
+  --toast-border: color-mix(in srgb, var(--toast-color) 40%, var(--line));
+  --toast-panel: color-mix(in srgb, var(--toast-color) 15%, var(--card));
 
   position: fixed;
   top: 20px;
@@ -15,17 +15,15 @@
   min-height: 72px;
   overflow: hidden;
   border: 1px solid var(--toast-border);
-  border-radius: 5px;
-  background: #fff;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
-  color: #303030;
-  font-family: Arial, Helvetica, sans-serif;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+  color: var(--ink);
+  font-family: inherit;
 }
 
 .toast--error {
-  --toast-color: #ff5952;
-  --toast-border: #ff5952;
-  --toast-panel: #ffceca;
+  --toast-color: var(--bad);
 }
 
 .toast__icon-panel {
