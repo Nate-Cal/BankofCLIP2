@@ -1,0 +1,8 @@
+/* Base theme from the HTML, needed by Section 5. */
+:root{--bg:#f4f6f5;--card:#fff;--ink:#0e1a16;--mute:#65746e;--line:#e1e7e4;--acc:#0a7d55;--accf:#fff;--bad:#c0392b;--sk:#e6ebe8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1210;--card:#131d19;--ink:#e8f1ed;--mute:#8aa096;--line:#22322c;--acc:#3ddc97;--accf:#06251a;--bad:#ff6b5b;--sk:#1c2a25}}
+:root[data-theme="dark"]{--bg:#0b1210;--card:#131d19;--ink:#e8f1ed;--mute:#8aa096;--line:#22322c;--acc:#3ddc97;--accf:#06251a;--bad:#ff6b5b;--sk:#1c2a25}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+
+#root { min-height: 100svh; }
