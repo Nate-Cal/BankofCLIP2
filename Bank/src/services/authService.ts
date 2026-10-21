@@ -1,76 +1,78 @@
-import type { Account, AuthService, User } from '../models/banking'
-import { mockStore, ServiceError, simulateLatency } from './mockStore'
+import type {
+  AuthResponse,
+  AuthService,
+  LoginRequest,
+  RegistrationRequest,
+  User,
+} from '../models/banking'
+import {
+  apiRequest,
+  clearAuthToken,
+  saveAuthToken,
+} from './apiClient'
 
-export { demoCredentials } from './mockStore'
+interface BackendAuthResponse {
+  userId: string
+  name: string
+  email: string
+  token: string
+}
+
+function mapUser(response: BackendAuthResponse): User {
+  const nameParts = (response.name || '').trim().split(/\s+/)
+
+  return {
+    id: String(response.userId),
+    userId: response.email,
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' '),
+  }
+}
+
+function mapAuthResponse(
+  response: BackendAuthResponse,
+): AuthResponse {
+  if (!response.token) {
+    throw new Error('The server did not return an authentication token.')
+  }
+
+  saveAuthToken(response.token)
+
+  const user = mapUser(response)
+  localStorage.setItem('bankCurrentUser', JSON.stringify(user))
+
+  return { user }
+}
 
 export const authService: AuthService = {
-  async login({ userId, pin }) {
-    await simulateLatency()
-    const user = mockStore.users.find(
-      (candidate) =>
-        candidate.userId.toLowerCase() === userId.trim().toLowerCase(),
+  async login({ email, password }: LoginRequest) {
+    const response = await apiRequest<BackendAuthResponse>(
+      '/user/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      },
     )
-    if (!user || mockStore.credentials.get(user.id) !== pin) {
-      throw new ServiceError(
-        'INVALID_CREDENTIALS',
-        'That user ID and PIN do not match. Please try again.',
-      )
-    }
-    mockStore.currentUserId = user.id
-    return { user: structuredClone(user) }
+
+    return mapAuthResponse(response)
   },
 
-  async register({ firstName, lastName, userId, pin }) {
-    await simulateLatency()
-    if (
-      !firstName.trim() ||
-      !lastName.trim() ||
-      !userId.trim() ||
-      !pin.trim()
-    ) {
-      throw new ServiceError(
-        'VALIDATION_ERROR',
-        'Please complete every required field.',
-      )
-    }
-    if (
-      mockStore.users.some(
-        (user) => user.userId.toLowerCase() === userId.trim().toLowerCase(),
-      )
-    ) {
-      throw new ServiceError(
-        'USER_ID_TAKEN',
-        'That user ID is already in use. Please choose another.',
-      )
-    }
-    const id = crypto.randomUUID()
-    const user: User = {
-      id,
-      userId: userId.trim(),
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-    }
-    const accounts: Account[] = (['CHECKING', 'SAVINGS'] as const).map(
-      (type, index) => ({
-        id: crypto.randomUUID(),
-        userId: id,
-        type,
-        name: type === 'CHECKING' ? 'Everyday Checking' : 'Personal Savings',
-        lastFour: String(
-          1000 + (((mockStore.accounts.length + index) * 137) % 9000),
-        ),
-        balanceCents: 0,
-        currency: 'USD',
-      }),
+  async register({ name, email, password }: RegistrationRequest) {
+    const response = await apiRequest<BackendAuthResponse>(
+      '/user/register',
+      {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+      },
     )
-    mockStore.users.push(user)
-    mockStore.credentials.set(id, pin)
-    mockStore.accounts.push(...accounts)
-    // Registration returns to sign-in; it does not open a session.
-    return { user: structuredClone(user) }
+
+    // Registration creates the account but does not automatically
+    // open a frontend session.
+    return { user: mapUser(response) }
   },
 
   logout() {
-    mockStore.currentUserId = null
+    clearAuthToken()
+    localStorage.removeItem('bankCurrentUser')
   },
 }
