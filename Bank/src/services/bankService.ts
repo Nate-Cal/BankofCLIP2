@@ -1,4 +1,5 @@
 
+
 import type {
   Account,
   DashboardResponse,
@@ -6,36 +7,36 @@ import type {
   TransactionResponse,
   TransactionType,
   User,
-} from '../models/banking';
-import { apiRequest } from './apiClient';
+} from '../models/banking'
+import { apiRequest } from './apiClient'
 
 interface BackendAccount {
-  accountId: number | string;
-  user?: { userId?: number | string };
-  currencyType?: string;
-  accountBalance?: number;
-  date?: string;
-  type?: string;
-  name?: string;
+  accountId: number | string
+  user?: { userId?: number | string }
+  currencyType?: string
+  accountBalance?: number
+  date?: string
+  type?: string
+  name?: string
 }
 
 interface BackendTransaction {
-  transactionId: number | string;
-  account?: { accountId?: number | string };
-  type?: string;
-  amount?: string | number;
-  date?: string;
-  description?: string;
+  transactionId: number | string
+  account?: { accountId?: number | string }
+  type?: string
+  amount?: string | number
+  date?: string
+  description?: string
 }
 
 function toCents(value: number | string | undefined): number {
-  const amount = Number(value ?? 0);
-  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+  const amount = Number(value ?? 0)
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0
 }
 
 function mapAccount(account: BackendAccount): Account {
-  const id = String(account.accountId);
-  const balance = Number(account.accountBalance ?? 0);
+  const id = String(account.accountId)
+  const balance = Number(account.accountBalance ?? 0)
 
   return {
     id,
@@ -47,35 +48,35 @@ function mapAccount(account: BackendAccount): Account {
     lastFour: id.slice(-4).padStart(4, '0'),
     balanceCents: Math.round(balance * 100),
     currency: account.currencyType || 'USD',
-  };
+  }
 }
 
 function mapTransaction(
   transaction: BackendTransaction,
 ): Transaction {
-  const rawType = (transaction.type || 'DEPOSIT').toUpperCase();
+  const rawType = (transaction.type || 'DEPOSIT').toUpperCase()
 
-  let type: TransactionType;
-  let direction: 'CREDIT' | 'DEBIT';
+  let type: TransactionType
+  let direction: 'CREDIT' | 'DEBIT'
 
   if (rawType === 'WITHDRAW' || rawType === 'WITHDRAWAL') {
-    type = 'WITHDRAWAL';
-    direction = 'DEBIT';
+    type = 'WITHDRAWAL'
+    direction = 'DEBIT'
   } else if (rawType === 'TRANSFER_OUT') {
-    type = 'TRANSFER_OUT';
-    direction = 'DEBIT';
+    type = 'TRANSFER_OUT'
+    direction = 'DEBIT'
   } else if (rawType === 'TRANSFER_IN') {
-    type = 'TRANSFER_IN';
-    direction = 'CREDIT';
+    type = 'TRANSFER_IN'
+    direction = 'CREDIT'
   } else if (rawType === 'TRANSFER') {
-    type = 'TRANSFER';
-    direction = 'DEBIT';
+    type = 'TRANSFER'
+    direction = 'DEBIT'
   } else {
-    type = 'DEPOSIT';
-    direction = 'CREDIT';
+    type = 'DEPOSIT'
+    direction = 'CREDIT'
   }
 
-  const timestamp = transaction.date || new Date().toISOString();
+  const timestamp = transaction.date || new Date().toISOString()
 
   return {
     id: String(transaction.transactionId),
@@ -87,12 +88,17 @@ function mapTransaction(
     createdAt: timestamp,
     timestamp,
     status: 'COMPLETED',
-  };
+  }
 }
 
 async function getAccounts(): Promise<Account[]> {
-  const response = await apiRequest<BackendAccount[]>('/user/accounts');
-  return response.map(mapAccount);
+  const response = await apiRequest<BackendAccount[]>(
+    '/user/accounts',
+    {},
+    true,
+  )
+
+  return response.map(mapAccount)
 }
 
 async function getTransactions(
@@ -102,11 +108,13 @@ async function getTransactions(
     accounts.map(async (account) => {
       const response = await apiRequest<BackendTransaction[]>(
         `/transaction/transactions/${encodeURIComponent(account.id)}`,
-      );
+        {},
+        true,
+      )
 
-      return response.map(mapTransaction);
+      return response.map(mapTransaction)
     }),
-  );
+  )
 
   return results
     .flat()
@@ -114,67 +122,70 @@ async function getTransactions(
       (a, b) =>
         new Date(b.createdAt).getTime() -
         new Date(a.createdAt).getTime(),
-    );
+    )
 }
 
 export const bankService = {
   async getDashboard(): Promise<DashboardResponse> {
-    const accounts = await getAccounts();
-    const transactions = await getTransactions(accounts);
-
-    const savedUser = localStorage.getItem('bankCurrentUser');
+    const savedUser = localStorage.getItem('bankCurrentUser')
 
     if (!savedUser) {
-      throw new Error('Your session has expired. Please sign in again.');
+      throw new Error('Your session has expired. Please sign in again.')
     }
 
-    const user = JSON.parse(savedUser) as User;
+    const user = JSON.parse(savedUser) as User
+    const accounts = await getAccounts()
+    const transactions = await getTransactions(accounts)
 
     return {
       user,
       accounts,
       transactions,
-    };
+    }
   },
 
   async submitTransaction(input: {
-    type: TransactionType;
-    accountId: string;
-    amountCents: number;
-    destinationAccountId?: string;
-    note?: string;
+    type: TransactionType
+    accountId: string
+    amountCents: number
+    destinationAccountId?: string
+    note?: string
   }): Promise<TransactionResponse> {
-    const amount = (input.amountCents / 100).toFixed(2);
-    const accountId = encodeURIComponent(input.accountId);
+    const amount = (input.amountCents / 100).toFixed(2)
+    const accountId = encodeURIComponent(input.accountId)
 
     if (input.type === 'DEPOSIT') {
       await apiRequest(
         `/transaction/deposit/${accountId}?amount=${encodeURIComponent(amount)}`,
         { method: 'PUT' },
-      );
+        true,
+      )
     } else if (input.type === 'WITHDRAWAL') {
       await apiRequest(
         `/transaction/withdraw/${accountId}?amount=${encodeURIComponent(amount)}`,
         { method: 'PUT' },
-      );
+        true,
+      )
     } else if (input.type === 'TRANSFER') {
       if (!input.destinationAccountId) {
-        throw new Error('Choose a destination account.');
+        throw new Error('Choose a destination account.')
       }
 
       await apiRequest(
         `/transaction/transfer/${accountId}?transferAccountId=${encodeURIComponent(input.destinationAccountId)}&amount=${encodeURIComponent(amount)}`,
         { method: 'PUT' },
-      );
+        true,
+      )
     } else {
-      throw new Error('Unsupported transaction type.');
+      throw new Error('Unsupported transaction type.')
     }
 
-    const dashboard = await this.getDashboard();
+    const dashboard = await this.getDashboard()
 
     return {
       accounts: dashboard.accounts,
       transactions: dashboard.transactions,
-    };
+    }
   },
-};
+}
+
