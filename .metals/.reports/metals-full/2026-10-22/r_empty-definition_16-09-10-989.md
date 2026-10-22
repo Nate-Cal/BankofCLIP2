@@ -1,9 +1,20 @@
-package com.bankofcli.service;
+error id: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/ServiceMapper.java:com/example/service/ServiceMapper#
+file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/ServiceMapper.java
+empty definition using pc, found symbol in pc: 
+found definition using semanticdb; symbol com/example/service/ServiceMapper#
+empty definition using fallback
+non-local guesses:
 
-import com.bankofcli.service.contract.BankContracts.*;
+offset: 155
+uri: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/ServiceMapper.java
+text:
+```scala
+package com.example.service;
+
+import com.example.service.contract.BankContracts.*;
 import com.bankofcli.service.port.BankData.*;
 
-final class ServiceMapper {
+final class ServiceMapper@@ {
     private ServiceMapper() {}
 
     static UserIdentity identity(UserData user) {
@@ -20,3 +31,10 @@ final class ServiceMapper {
                 entry.type(), entry.amount(), entry.date().toString(), entry.description());
     }
 }
+
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: 
