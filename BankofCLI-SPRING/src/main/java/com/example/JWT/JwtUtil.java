@@ -21,7 +21,6 @@ public class JwtUtil {
     public String generateToken(String username, String password, String role, int userId) {
         return Jwts.builder()
                 .setSubject(username) //who the user is
-                .setSubject(password) //what the password is
                 .claim("role", "ROLE_" + role) //claims are just other pieces of info
                 .claim("userId", userId)
                 .setIssuedAt(new Date())
@@ -43,14 +42,6 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    public String extractPassword(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
 
     // Extracts the role custom claim from a JWT
     public String extractRole(String token) {
