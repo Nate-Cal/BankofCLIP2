@@ -1,15 +1,15 @@
-package com.bankofcli.service;
+package com.example.service;
 
-import com.bankofcli.service.contract.BankContracts.*;
-import com.bankofcli.service.port.*;
-import com.bankofcli.service.port.BankData.UserData;
+import com.example.service.contract.BankContracts.*;
+import com.example.service.port.*;
+import com.example.service.port.BankData.UserData;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import static com.bankofcli.service.BankServiceException.Code.*;
+import static com.example.service.BankServiceException.Code.*;
 
 @Service
 @Transactional(readOnly = true)

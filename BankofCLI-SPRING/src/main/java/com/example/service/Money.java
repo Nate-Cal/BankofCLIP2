@@ -1,8 +1,9 @@
-package com.bankofcli.service;
+package com.example.service;
+
+import static com.example.service.BankServiceException.Code.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import static com.bankofcli.service.BankServiceException.Code.*;
 
 final class Money {
     // Keeps the frontend's dollar-number -> integer-cent conversion within a safe range.

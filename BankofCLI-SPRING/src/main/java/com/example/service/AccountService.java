@@ -1,14 +1,14 @@
-package com.bankofcli.service;
+package com.example.service;
 
-import com.bankofcli.service.contract.BankContracts.AccountResponse;
-import com.bankofcli.service.port.AccountStore;
-import com.bankofcli.service.port.BankData.AccountData;
+import com.example.service.contract.BankContracts.AccountResponse;
+import com.example.service.port.AccountStore;
+import com.example.service.port.BankData.AccountData;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import static com.bankofcli.service.BankServiceException.Code.ACCOUNT_NOT_FOUND;
+import static com.example.service.BankServiceException.Code.ACCOUNT_NOT_FOUND;
 
 @Service
 @Transactional(readOnly = true)

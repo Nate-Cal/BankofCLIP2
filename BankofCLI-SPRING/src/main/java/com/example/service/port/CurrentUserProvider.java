@@ -1,4 +1,4 @@
-package com.bankofcli.service.port;
+package com.example.service.port;
 
 import java.util.Optional;
 

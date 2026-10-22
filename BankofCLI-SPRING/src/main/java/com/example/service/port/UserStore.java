@@ -1,6 +1,6 @@
-package com.bankofcli.service.port;
+package com.example.service.port;
 
-import com.bankofcli.service.port.BankData.UserData;
+import com.example.service.port.BankData.UserData;
 import java.util.Optional;
 
 /** Implement using the team's repository, participating in the service's Spring transaction. */

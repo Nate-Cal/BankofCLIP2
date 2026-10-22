@@ -1,4 +1,4 @@
-package com.bankofcli.service;
+package com.example.service;
 
 /** An unchecked exception so a rejected operation rolls back its Spring transaction. */
 public final class BankServiceException extends RuntimeException {

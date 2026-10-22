@@ -1,6 +1,6 @@
-package com.bankofcli.service.port;
+package com.example.service.port;
 
-import com.bankofcli.service.contract.BankContracts.UserIdentity;
+import com.example.service.contract.BankContracts.UserIdentity;
 
 @FunctionalInterface
 public interface TokenIssuer {

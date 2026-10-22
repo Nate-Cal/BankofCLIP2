@@ -1,11 +1,22 @@
-package com.bankofcli.service;
+error id: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/TransactionService.java:java/math/BigDecimal#
+file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/TransactionService.java
+empty definition using pc, found symbol in pc: java/math/BigDecimal#
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
 
-import com.bankofcli.service.contract.BankContracts.*;
-import com.bankofcli.service.port.*;
-import com.bankofcli.service.port.BankData.*;
+offset: 294
+uri: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/TransactionService.java
+text:
+```scala
+package com.example.service;
+
+import com.example.service.contract.BankContracts.*;
+import com.example.service.port.*;
+import com.example.service.port.BankData.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.math.BigDecimal;
+import java.math.Big@@Decimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -109,3 +120,10 @@ public class TransactionService {
         }
     }
 }
+
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/math/BigDecimal#
