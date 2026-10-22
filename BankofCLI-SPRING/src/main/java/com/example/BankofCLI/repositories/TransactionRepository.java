@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
+public interface TransactionRepository extends JpaRepository<Transaction, String> {
 
     /*Transaction class is dependent on Account class which is dependent on the
     User class. findAllByAccountAccountId gets the account id from the transactions

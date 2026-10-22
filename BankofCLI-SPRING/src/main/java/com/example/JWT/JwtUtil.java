@@ -1,16 +1,18 @@
 package com.example.JWT;
 
-import com.example.MODELS.User;
+import java.security.Key;
+import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.example.BankofCLI.models.User;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.security.Key;
-import java.util.Date;
 
 //This Class is responsible for generating and reading JWTs
 
@@ -35,9 +37,8 @@ public class JwtUtil {
     public String generateToken(User user) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(user.getEmail())          //who the user is
-                .claim("role", user.getRole())        //claims are just other pieces of info
-                .claim("userId", user.getUserId())
+                .setSubject(user.getEmail())          //who the user is       //claims are just other pieces of info
+                .claim("Id", user.getId())
                 .setIssuer(ISSUER)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationMs))

@@ -7,10 +7,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.example.BankofCLI.models.LoginDTO;
 import com.example.BankofCLI.models.User;
 import com.example.JWT.JwtUtil;
+import com.example.service.AuthService;
+import com.example.service.contract.BankContracts.AuthResponse;
+import com.example.service.contract.BankContracts.LoginRequest;
+import com.example.service.contract.BankContracts.RegisterRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -18,22 +20,27 @@ import com.example.JWT.JwtUtil;
 public class AuthController {
 	
 	private final JwtUtil jwt;
+	private final AuthService auth;
+	
 
-	public AuthController(JwtUtil jwt) {
+	public AuthController(JwtUtil jwt, AuthService auth) {
 		this.jwt = jwt;
+		this.auth = auth;
 	}
 
-	public ResponseEntity<String> login(@RequestBody LoginDTO dto){
+	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest dto){
 		
-		User loggedin; // some service login method
-		String token = jwt.generateToken(loggedin);
-		return ResponseEntity.ok(token);
+		AuthResponse loggedin = auth.login(dto);
+		
+		return ResponseEntity.ok(loggedin);
 	}
 	
 	@PostMapping("/register")
-	public ResponseEntity<User> register(@RequestBody User newUser){
-		//some service register method
-		return ResponseEntity.status(201).body(newUser);
+	public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest newUser){
+		
+		AuthResponse registerd = auth.register(newUser);;
+		
+		return ResponseEntity.status(201).body(registerd);
 	}
 	
 	

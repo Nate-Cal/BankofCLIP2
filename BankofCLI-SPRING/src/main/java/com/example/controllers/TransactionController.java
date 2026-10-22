@@ -1,44 +1,54 @@
 package com.example.controllers;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.BankofCLI.models.Account;
-import com.example.BankofCLI.models.Transaction;
+import com.example.JWT.JwtUtil;
+import com.example.service.TransactionService;
+import com.example.service.contract.BankContracts.TransactionResponse;
 
 @Controller
 @RequestMapping("/transaction")
 @CrossOrigin(origins = {"http://localhost:5173"}, allowedHeaders = "*")
 public class TransactionController {
 
-	@PutMapping("/deposit/{accountId}?amount={amount}")
-	public ResponseEntity<?> deposit(@RequestHeader("Authorization") String token,@RequestParam(required = true) float amount){
-		return ResponseEntity.ok().body(null);
+	private final JwtUtil jwt;
+	private final TransactionService tranService;
+	
+	public TransactionController(JwtUtil jwt, TransactionService tranService) {
+		this.jwt = jwt;
+		this.tranService = tranService;
 	}
-	@PutMapping("/withdraw{accountId}?amount={amount}")
-	public ResponseEntity<?> withdraw(@RequestHeader("Authorization") String token,@RequestParam(required = true) float amount){
-		return ResponseEntity.ok().body(null);
+	@PutMapping("/deposit/{accountId}")
+	public ResponseEntity<?> deposit(@PathVariable String accountId,@RequestParam(required = true) BigDecimal amount){
+		tranService.deposit(accountId,amount);
+		
+		return ResponseEntity.noContent().build();
 	}
-	@PutMapping("/transfer/{accountId}?transferAccountId={destinationAccountId}&amount={amount}")
-	public ResponseEntity<?> transfer(@RequestParam(required = true) Account destinationAccountId, @RequestHeader("Authorization") String token,@RequestParam(required = true) float amount){
-		return ResponseEntity.ok().body(null);
+	@PutMapping("/withdraw{accountId}")
+	public ResponseEntity<?> withdraw(@PathVariable String accountId,@RequestParam(required = true) BigDecimal amount){
+		tranService.withdraw(accountId, amount);
+		return ResponseEntity.noContent().build();
+	}
+	@PutMapping("/transfer/{accountId}")
+	public ResponseEntity<?> transfer(@PathVariable String accountId,@RequestParam(required = true) String destinationAccountId,@RequestParam(required = true) BigDecimal amount){
+		tranService.transfer(accountId, destinationAccountId, amount);
+		return ResponseEntity.noContent().build();
 	}
 	@GetMapping("/transactions/{accountId}")
-	public ResponseEntity<List<Transaction>> getTransactions(@PathVariable UUID accountId){
-		//service here
-		return ResponseEntity.ok().body(null);
+	public ResponseEntity<List<TransactionResponse>> getTransactions(@PathVariable String accountId){
+		
+		return ResponseEntity.ok(tranService.getHistory(accountId));
 	}
 	
 	
