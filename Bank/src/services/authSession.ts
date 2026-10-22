@@ -13,6 +13,11 @@ let expiryTimer: ReturnType<typeof setTimeout> | undefined
 const listeners = new Set<(reason: EndReason) => void>()
 
 export function clearSession(reason: EndReason = 'logout'): void {
+  // Remove credentials left by the previous localStorage implementation.
+  try {
+    localStorage.removeItem('bankAuthToken')
+    localStorage.removeItem('bankCurrentUser')
+  } catch { /* Storage may be unavailable; active credentials are kept in memory. */ }
   const hadSession = session !== null
   session = null
   clearTimeout(expiryTimer)

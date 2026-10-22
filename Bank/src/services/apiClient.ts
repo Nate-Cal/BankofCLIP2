@@ -8,7 +8,7 @@ interface RequestOptions {
   body?: unknown
   authenticated?: boolean
   session?: AuthSession
-  responseType?: 'json' | 'text'
+  responseType?: 'json' | 'text' | 'mutation'
 }
 
 function responseError(text: string, status: number): ServiceError {
@@ -19,6 +19,7 @@ function responseError(text: string, status: number): ServiceError {
     if (body && typeof body === 'object') {
       if ('code' in body && typeof body.code === 'string') code = body.code
       if ('message' in body && typeof body.message === 'string') message = body.message
+      else if ('error' in body && typeof body.error === 'string') message = body.error
     }
   } catch {
     // A short plain-text API error is useful; an HTML error page is not.
@@ -55,6 +56,11 @@ export async function apiRequest(endpoint: string, options: RequestOptions = {})
         throw new ServiceError('UNAUTHENTICATED', 'Your session expired. Please sign in again.', 401)
       }
       throw responseError(text, response.status)
+    }
+    if (options.responseType === 'mutation') {
+      if (!text.trim()) return undefined
+      try { return JSON.parse(text) as unknown }
+      catch { return text.trim() }
     }
     if (options.responseType === 'text') {
       // Java controllers can return text/plain or a JSON-encoded string.

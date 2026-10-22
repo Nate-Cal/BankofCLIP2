@@ -7,6 +7,8 @@ import type {
 } from './models/banking'
 import { authService } from './services/authService'
 import { bankService } from './services/bankService'
+import { onSessionEnded } from './services/authSession'
+import { ServiceError } from './services/serviceError'
 import { Brand, Button, DashboardSkeleton, Toast } from './components/ui'
 import type { ToastMessage } from './components/ui'
 import { Icon } from './components/Icon'
@@ -37,6 +39,17 @@ function App() {
   const [loadError, setLoadError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
 
+  useEffect(() => onSessionEnded((reason) => {
+    setUser(null)
+    setDashboard(null)
+    setLoadError('')
+    setView('overview')
+    setSelectedAccountId(undefined)
+    setToast(reason === 'expired'
+      ? { id: Date.now(), kind: 'error', message: 'Your session expired. Please sign in again.' }
+      : null)
+  }), [])
+
   useEffect(() => {
     if (!user) return
     let active = true
@@ -49,6 +62,8 @@ function App() {
         }
       })
       .catch((error: unknown) => {
+        if (error instanceof ServiceError
+          && ['SESSION_CHANGED', 'UNAUTHENTICATED'].includes(error.code)) return
         if (active)
           setLoadError(
             error instanceof Error
@@ -96,7 +111,7 @@ function App() {
         ? {
             ...previous,
             accounts: response.accounts,
-            transactions: [...response.transactions, ...previous.transactions],
+            transactions: response.transactions,
           }
         : previous,
     )

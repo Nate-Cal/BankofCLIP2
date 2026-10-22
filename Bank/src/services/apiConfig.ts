@@ -3,10 +3,11 @@ export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 ).replace(/\/+$/, '')
 
-// Matches the HTTP routes included in the supplied repository history.
+// Auth routes match the team's updated authService and /auth/** security rules.
+// Banking routes retain the existing service contract until controllers are merged.
 export const apiRoutes = {
-  login: '/user/login',
-  register: '/user/register',
+  login: '/auth',
+  register: '/auth/register',
   accounts: '/user/accounts',
   history: (id: string) => `/transaction/transactions/${encodeURIComponent(id)}`,
   deposit: (id: string) => `/transaction/deposit/${encodeURIComponent(id)}`,

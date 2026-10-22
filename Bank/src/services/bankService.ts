@@ -85,14 +85,22 @@ export const bankService: BankService = {
       const path = request.type === 'DEPOSIT' ? apiRoutes.deposit(request.accountId)
         : request.type === 'WITHDRAWAL' ? apiRoutes.withdraw(request.accountId) : apiRoutes.transfer(request.accountId)
       sent = true
-      const message = await apiRequest(`${path}?${params}`, {
-        method: 'PUT', authenticated: true, session, responseType: 'text',
+      const response = await apiRequest(path + '?' + params, {
+        method: 'PUT', authenticated: true, session, responseType: 'mutation',
       })
-      // The legacy API also returns business failures as HTTP 200 text. Do not report those as success.
-      if (typeof message !== 'string' || !/\b(?:was|is) successful\b/i.test(message)) {
-        if (typeof message === 'string' && /unable|cannot|invalid|insufficient|unsuccessful|not found/i.test(message)) {
-          throw new ServiceError('TRANSACTION_REJECTED', message)
-        }
+      const body = response && typeof response === 'object' && !Array.isArray(response)
+        ? response as Record<string, unknown> : null
+      const message = typeof response === 'string' ? response
+        : typeof body?.message === 'string' ? body.message : undefined
+      // Existing controllers can return business failures as HTTP 200.
+      if (typeof body?.error === 'string' || body?.success === false
+        || (message && /unable|cannot|invalid|insufficient|unsuccessful|not found|failed/i.test(message))) {
+        throw new ServiceError('TRANSACTION_REJECTED',
+          typeof body?.error === 'string' ? body.error : message || 'The server rejected the transaction.')
+      }
+      const confirmed = response === undefined || body?.success === true
+        || (message !== undefined && /\b(?:was|is) successful\b|^success(?:ful)?[.!]?$/i.test(message))
+      if (!confirmed) {
         throw new ServiceError('INVALID_API_RESPONSE', 'The server did not confirm the transaction.')
       }
       accepted = true

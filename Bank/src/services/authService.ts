@@ -8,14 +8,14 @@ import { ServiceError } from './serviceError'
 let authAttempt = 0
 
 export const authService: AuthService = {
-  async login({ userId, pin }) {
+  async login({ email, password }) {
     const attempt = ++authAttempt
     clearSession()
-    if (!userId.trim() || !pin.trim()) {
-      throw new ServiceError('VALIDATION_ERROR', 'Enter your user ID and PIN.')
+    if (!email.trim() || !password.trim()) {
+      throw new ServiceError('VALIDATION_ERROR', 'Enter your email and password.')
     }
     const response = objectValue(await apiRequest(apiRoutes.login, {
-      method: 'POST', body: { email: userId.trim(), password: pin },
+      method: 'POST', body: { email: email.trim(), password },
     }))
     if (attempt !== authAttempt) throw new ServiceError('SESSION_CHANGED', 'Sign-in was cancelled.')
     const user = mapUser(response)
@@ -23,17 +23,17 @@ export const authService: AuthService = {
     return { user }
   },
 
-  async register({ firstName, lastName, userId, pin }) {
+  async register({ firstName, lastName, email, password }) {
     const attempt = ++authAttempt
     clearSession()
-    if (!firstName.trim() || !lastName.trim() || !userId.trim() || !pin.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
       throw new ServiceError('VALIDATION_ERROR', 'Please complete every required field.')
     }
     const response = await apiRequest(apiRoutes.register, {
       method: 'POST',
       body: {
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        email: userId.trim(), password: pin,
+        firstName: firstName.trim(), lastName: lastName.trim(),
+        email: email.trim(), password,
       },
     })
     if (attempt !== authAttempt) throw new ServiceError('SESSION_CHANGED', 'Registration response was cancelled.')

@@ -4,12 +4,12 @@ import { bankService } from '../src/services/bankService'
 import { apiRequest } from '../src/services/apiClient'
 import { API_BASE_URL } from '../src/services/apiConfig'
 import { getSession, onSessionEnded, startSession } from '../src/services/authSession'
-import { centsToDollars, dollarsToCents, mapTransactions } from '../src/services/apiMappers'
+import { centsToDollars, dollarsToCents, mapAccounts, mapTransactions } from '../src/services/apiMappers'
 
-const user = { id: '7', userId: 'eric', firstName: 'Eric', lastName: 'Example' }
+const user = { id: '7', userId: 'eric@example.com', email: 'eric@example.com', firstName: 'Eric', lastName: 'Example' }
 const token = (expiry = Math.floor(Date.now() / 1000) + 3600) =>
-  `e30.${Buffer.from(JSON.stringify({ sub: 'Eric Example', userId: 7, exp: expiry })).toString('base64url')}.c2lnbmF0dXJl`
-const authBody = () => ({ id: '7', name: 'Eric Example', email: 'eric', token: token() })
+  `e30.${Buffer.from(JSON.stringify({ sub: 'eric@example.com', userId: 7, role: 'USER', iss: 'bankofcli', exp: expiry })).toString('base64url')}.c2lnbmF0dXJl`
+const authBody = () => ({ userId: 7, firstName: 'Eric', lastName: 'Example', email: 'eric@example.com', token: token() })
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json' },
 })
@@ -35,16 +35,52 @@ afterEach(() => {
 })
 
 describe('authentication and HTTP requests', () => {
+  it('reads the SecurityConfig error field without hiding the server message', async () => {
+    fetchMock.mockResolvedValueOnce(json({ error: 'Invalid email or password' }, 401))
+    await expect(authService.login({ email: 'eric@example.com', password: 'incorrect' }))
+      .rejects.toMatchObject({ message: 'Invalid email or password', status: 401 })
+    expect(getSession()).toBeNull()
+  })
+
+  it('requires the new auth response fields instead of storing an undefined ID', async () => {
+    for (const missing of ['userId', 'firstName', 'lastName', 'email']) {
+      const response: Record<string, unknown> = authBody()
+      delete response[missing]
+      fetchMock.mockResolvedValueOnce(json(response))
+      await expect(authService.login({ email: 'eric@example.com', password: 'password' }))
+        .rejects.toMatchObject({ code: 'INVALID_API_RESPONSE' })
+      expect(getSession()).toBeNull()
+    }
+  })
+
+  it('accepts registration without a JWT and preserves the new split-name payload', async () => {
+    fetchMock.mockResolvedValueOnce(json({ ...authBody(), token: undefined }, 201))
+    expect(await authService.register({ firstName: 'Eric', lastName: 'Example', email: 'eric@example.com', password: ' pass word ' }))
+      .toEqual({ user })
+    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({
+      firstName: 'Eric', lastName: 'Example', email: 'eric@example.com', password: ' pass word ',
+    })
+    expect(getSession()).toBeNull()
+  })
+
+  it('retains the session on a role-based 403 and exposes the backend error', async () => {
+    startSession(user, token())
+    fetchMock.mockResolvedValueOnce(json({ error: 'Access denied' }, 403))
+    await expect(apiRequest('/user/accounts', { authenticated: true }))
+      .rejects.toMatchObject({ status: 403, message: 'Access denied' })
+    expect(getSession()?.user.id).toBe(user.id)
+  })
+
   it('maps the existing login form to the API and uses the real response id', async () => {
     const storageWrite = vi.fn()
     vi.stubGlobal('localStorage', { setItem: storageWrite })
     vi.stubGlobal('sessionStorage', { setItem: storageWrite })
     fetchMock.mockResolvedValueOnce(json(authBody()))
-    expect(await authService.login({ userId: ' eric ', pin: ' my PIN ' })).toEqual({ user })
+    expect(await authService.login({ email: ' eric@example.com ', password: ' my PIN ' })).toEqual({ user })
     const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toBe(`${API_BASE_URL}/user/login`)
+    expect(url).toBe(`${API_BASE_URL}/auth`)
     expect(options?.method).toBe('POST')
-    expect(JSON.parse(options?.body as string)).toEqual({ email: 'eric', password: ' my PIN ' })
+    expect(JSON.parse(options?.body as string)).toEqual({ email: 'eric@example.com', password: ' my PIN ' })
     expect(new Headers(options?.headers).has('Authorization')).toBe(false)
     expect(getSession()?.user.id).toBe('7')
     expect(storageWrite).not.toHaveBeenCalled()
@@ -52,23 +88,23 @@ describe('authentication and HTTP requests', () => {
 
   it('registers over HTTP and returns to sign-in without keeping the registration token', async () => {
     fetchMock.mockResolvedValueOnce(json(authBody(), 201))
-    const result = await authService.register({ firstName: ' Eric ', lastName: ' Example ', userId: ' eric ', pin: 'pin' })
+    const result = await authService.register({ firstName: ' Eric ', lastName: ' Example ', email: ' eric@example.com ', password: 'pin' })
     expect(result.user).toEqual(user)
-    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({ name: 'Eric Example', email: 'eric', password: 'pin' })
-    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/user/register`)
+    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({ firstName: 'Eric', lastName: 'Example', email: 'eric@example.com', password: 'pin' })
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/auth/register`)
     expect(getSession()).toBeNull()
   })
 
   it('preserves API validation messages and does not retain a failed login session', async () => {
     fetchMock.mockResolvedValueOnce(json({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials.' }, 401))
-    await expect(authService.login({ userId: 'eric', pin: 'bad' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', status: 401 })
+    await expect(authService.login({ email: 'eric@example.com', password: 'bad' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS', status: 401 })
     expect(getSession()).toBeNull()
   })
 
   it('rejects malformed or expired JWTs before starting a session', async () => {
     for (const value of ['bad-token', token(Math.floor(Date.now() / 1000) - 1)]) {
       fetchMock.mockResolvedValueOnce(json({ ...authBody(), token: value }))
-      await expect(authService.login({ userId: 'eric', pin: 'pin' })).rejects.toMatchObject({ code: 'INVALID_AUTH_RESPONSE' })
+      await expect(authService.login({ email: 'eric@example.com', password: 'pin' })).rejects.toMatchObject({ code: 'INVALID_AUTH_RESPONSE' })
       expect(getSession()).toBeNull()
     }
   })
@@ -123,7 +159,7 @@ describe('authentication and HTTP requests', () => {
   it('does not restore a session when logout happens during login', async () => {
     let finish!: (value: Response) => void
     fetchMock.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
-    const login = authService.login({ userId: 'eric', pin: 'pin' })
+    const login = authService.login({ email: 'eric@example.com', password: 'pin' })
     authService.logout()
     finish(json(authBody()))
     await expect(login).rejects.toMatchObject({ code: 'SESSION_CHANGED' })
@@ -132,7 +168,7 @@ describe('authentication and HTTP requests', () => {
 
   it('rejects HTML or empty successful responses instead of inventing data', async () => {
     fetchMock.mockResolvedValueOnce(new Response('<html>Sign in</html>'))
-    await expect(apiRequest('/user/login')).rejects.toMatchObject({ code: 'INVALID_API_RESPONSE' })
+    await expect(apiRequest('/auth')).rejects.toMatchObject({ code: 'INVALID_API_RESPONSE' })
   })
 
   it('handles network errors and aborts a timed-out request', async () => {
@@ -150,6 +186,46 @@ describe('authentication and HTTP requests', () => {
 
 describe('bank API mapping and transactions', () => {
   beforeEach(() => { startSession(user, token()) })
+
+  it('maps the checked-in BankofCLI account and transaction model fields with UUID IDs', async () => {
+    const ownerId = '1187a977-dd67-4e78-9476-bf9eb48d3a24'
+    const accountId = '6498683a-6109-468f-8337-4ccb52d2bf80'
+    startSession({ ...user, id: ownerId }, token())
+    fetchMock.mockResolvedValueOnce(json([{
+      id: accountId, ownerId, name: 'Everyday checking', balance: 123.45, currency: 'USD', mask: '****4321',
+    }])).mockResolvedValueOnce(json([{
+      id: 'tx-uuid', accountId, type: 'WITHDRAW', amount: 1.25,
+      date: '2026-10-22T14:00:00.000Z', description: 'Withdrawal',
+    }]))
+    const result = await bankService.getDashboard()
+    expect(result.accounts[0]).toMatchObject({ id: accountId, userId: ownerId, name: 'Everyday checking', balanceCents: 12345, lastFour: '4321' })
+    expect(result.transactions[0]).toMatchObject({ id: 'tx-uuid', accountId, type: 'WITHDRAWAL', direction: 'DEBIT', amountCents: 125 })
+    expect(result.transactions[0].timestamp).toBe(result.transactions[0].createdAt)
+  })
+
+  it('rejects mismatched owners and missing balances in the current model shape', () => {
+    expect(() => mapAccounts([{ id: 'account', ownerId: 'another-user', balance: 10, currency: 'USD' }], '7')).toThrow()
+    expect(() => mapAccounts([{ id: 'account', ownerId: '7', currency: 'USD' }], '7')).toThrow()
+    expect(mapAccounts([{ id: 'account', ownerId: '7', balance: 0, currency: 'USD' }], '7')[0].balanceCents).toBe(0)
+  })
+
+  it.each(['empty', 'json'])('accepts a %s mutation acknowledgement and refreshes server data', async (kind) => {
+    fetchMock.mockResolvedValueOnce(json(accounts()))
+      .mockResolvedValueOnce(kind === 'empty' ? new Response(null, { status: 204 }) : json({ success: true }))
+      .mockResolvedValueOnce(json(accounts(101)))
+      .mockResolvedValueOnce(json([history(42, 'DEPOSIT', 11, '1.00')]))
+      .mockResolvedValueOnce(json([]))
+    const result = await bankService.submitTransaction({ type: 'DEPOSIT', accountId: '11', amountCents: 100 })
+    expect(result.accounts[0].balanceCents).toBe(10100)
+    expect(result.transactions[0].id).toBe('42')
+  })
+
+  it('rejects a JSON business error even when the controller returns HTTP 200', async () => {
+    fetchMock.mockResolvedValueOnce(json(accounts())).mockResolvedValueOnce(json({ error: 'Insufficient funds' }))
+    await expect(bankService.submitTransaction({ type: 'WITHDRAWAL', accountId: '11', amountCents: 100 }))
+      .rejects.toMatchObject({ code: 'TRANSACTION_REJECTED', message: 'Insufficient funds' })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
 
   it('loads real account/history responses, converts dollars to cents and discards private fields', async () => {
     fetchMock.mockResolvedValueOnce(json(accounts()))

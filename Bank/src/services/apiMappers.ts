@@ -45,10 +45,13 @@ export function centsToDollars(cents: number): string {
 
 export function mapUser(value: unknown): User {
   const raw = objectValue(value)
-  if (typeof raw.name !== 'string' || !raw.name.trim()
+  if (typeof raw.firstName !== 'string' || !raw.firstName.trim()
+    || typeof raw.lastName !== 'string' || !raw.lastName.trim()
     || typeof raw.email !== 'string' || !raw.email.trim()) return invalid('user')
-  const [firstName, ...rest] = raw.name.trim().split(/\s+/)
-  return { id: idValue(raw.id), userId: raw.email, firstName, lastName: rest.join(' ') }
+  return {
+    id: idValue(raw.userId), userId: raw.email.trim(), email: raw.email.trim(),
+    firstName: raw.firstName.trim(), lastName: raw.lastName.trim(),
+  }
 }
 
 export function mapAccounts(value: unknown, ownerId: string): Account[] {
@@ -56,22 +59,25 @@ export function mapAccounts(value: unknown, ownerId: string): Account[] {
   const seen = new Set<string>()
   return value.map((entry) => {
     const raw = objectValue(entry)
-    const id = idValue(raw.accountId)
+    // Current models use id/ownerId/balance/currency; retain the earlier DTO names too.
+    const id = idValue(raw.id ?? raw.accountId)
     if (seen.has(id)) return invalid('duplicate account ID')
     seen.add(id)
-    const owner = raw.userId ?? (raw.user == null ? undefined : objectValue(raw.user).userId)
+    const owner = raw.ownerId ?? raw.userId
+      ?? (raw.user == null ? undefined : objectValue(raw.user).userId)
     if (owner !== undefined && idValue(owner) !== ownerId) return invalid('account owner')
-    if (raw.currencyType !== 'USD') return invalid('account currency')
+    if ((raw.currency ?? raw.currencyType) !== 'USD') return invalid('account currency')
     if (raw.type != null && raw.type !== 'CHECKING' && raw.type !== 'SAVINGS') return invalid('account type')
+    const mask = raw.lastFour ?? raw.mask
+    const lastFour = typeof mask === 'string' ? mask.match(/(\d{4})$/)?.[1] : undefined
     return {
       id,
       userId: ownerId,
-      // The legacy Account entity has no type/name. Use its existing checking display convention.
+      // The checked-in Account entity omits type; preserve the UI's checking default.
       type: raw.type === 'SAVINGS' ? 'SAVINGS' : 'CHECKING',
       name: typeof raw.name === 'string' && raw.name.trim() ? raw.name : `Account ${id}`,
-      lastFour: typeof raw.lastFour === 'string' && /^\d{4}$/.test(raw.lastFour)
-        ? raw.lastFour : id.slice(-4).padStart(4, '0'),
-      balanceCents: dollarsToCents(raw.accountBalance),
+      lastFour: lastFour ?? id.slice(-4).padStart(4, '0'),
+      balanceCents: dollarsToCents(raw.balance ?? raw.accountBalance),
       currency: 'USD',
     }
   })
@@ -107,12 +113,12 @@ export function mapTransactions(value: unknown, accountId: string): Transaction[
     const amountCents = dollarsToCents(raw.amount)
     if (amountCents <= 0) return invalid('transaction amount')
     return {
-      id: idValue(raw.transactionId), accountId, type, direction, amountCents,
+      id: idValue(raw.id ?? raw.transactionId), accountId, type, direction, amountCents,
       description: typeof raw.description === 'string' && raw.description.trim()
         ? raw.description : type === 'TRANSFER'
           ? `Transfer ${direction === 'CREDIT' ? 'received' : 'sent'}`
           : type === 'DEPOSIT' ? 'Money deposit' : 'Cash withdrawal',
-      createdAt: date.toISOString(), status: 'COMPLETED',
+      createdAt: date.toISOString(), timestamp: date.toISOString(), status: 'COMPLETED',
       ...(raw.relatedAccountId == null ? {} : { relatedAccountId: idValue(raw.relatedAccountId) }),
     }
   })
