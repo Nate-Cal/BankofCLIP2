@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,32 +16,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import com.example.BankofCLI.models.Account;
 
 @Controller
-@RequestMapping("/Account")
+@RequestMapping("/user")
+@CrossOrigin(origins = {"http://localhost:5173"}, allowedHeaders = "*")
 public class AccountController {
 	
 	@PostMapping("/add")
 	public ResponseEntity<Account> insertAccount(@RequestBody Account tobeAdded, @RequestHeader("Authorization") String token){
-		return;
+		return ResponseEntity.status(201).body(null);
 	}
 	
 	@GetMapping("/get")
 	public ResponseEntity<Account> getAccount(@RequestBody Account account, @RequestHeader("Authorization") String token){
-		return;
+		return ResponseEntity.ok(account);
 	}
 	
-	@GetMapping("/getAll")
+	@GetMapping("/accounts")
 	public ResponseEntity<List<Account>> getAccountsByUser(@RequestHeader("Authorization") String token){
-		return;
+		//Service logic here
+		return ResponseEntity.ok().body(null);
 	}
 	
 	@DeleteMapping("/delete")
 	public ResponseEntity<?> deleteAccount(@RequestBody Account account){
-		return;
+		return ResponseEntity.ok().body(null);
 	}
 	
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e){
-        
         return ResponseEntity.badRequest().body(e.getMessage());
     }
 }
