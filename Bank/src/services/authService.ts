@@ -13,19 +13,19 @@ import {
 
 interface BackendAuthResponse {
   userId: string
-  name: string
+  firstName: string
+  lastName: string
   email: string
   token: string
 }
 
 function mapUser(response: BackendAuthResponse): User {
-  const nameParts = (response.name || '').trim().split(/\s+/)
 
   return {
     id: String(response.userId),
     userId: response.email,
-    firstName: nameParts[0] || '',
-    lastName: nameParts.slice(1).join(' '),
+    firstName: response.firstName,
+    lastName: response.lastName,
   }
 }
 
@@ -47,7 +47,7 @@ function mapAuthResponse(
 export const authService: AuthService = {
   async login({ email, password }: LoginRequest) {
     const response = await apiRequest<BackendAuthResponse>(
-      '/user/login',
+      '/auth',
       {
         method: 'POST',
         body: JSON.stringify({ email, password }),
@@ -57,12 +57,12 @@ export const authService: AuthService = {
     return mapAuthResponse(response)
   },
 
-  async register({ name, email, password }: RegistrationRequest) {
+  async register({ firstName, lastName, email, password }: RegistrationRequest) {
     const response = await apiRequest<BackendAuthResponse>(
-      '/user/register',
+      '/auth/register',
       {
         method: 'POST',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ firstName, lastName, email, password }),
       },
     )
 
