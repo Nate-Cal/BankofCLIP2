@@ -14,18 +14,21 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.example.BankofCLI.models.Account;
+import com.example.JWT.JwtUtil;
 
 @Controller
 @RequestMapping("/user")
 @CrossOrigin(origins = {"http://localhost:5173"}, allowedHeaders = "*")
 public class AccountController {
 	
-	@PostMapping("/add")
+	private final JwtUtil jwt;
+	
+	@PostMapping("/addAccount")
 	public ResponseEntity<Account> insertAccount(@RequestBody Account tobeAdded, @RequestHeader("Authorization") String token){
 		return ResponseEntity.status(201).body(null);
 	}
 	
-	@GetMapping("/get")
+	@GetMapping("/getAccount")
 	public ResponseEntity<Account> getAccount(@RequestBody Account account, @RequestHeader("Authorization") String token){
 		return ResponseEntity.ok(account);
 	}
