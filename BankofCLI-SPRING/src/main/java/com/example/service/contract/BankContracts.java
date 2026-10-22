@@ -1,4 +1,4 @@
-package com.bankofcli.service.contract;
+package com.example.service.contract;
 
 import java.math.BigDecimal;
 

@@ -1,7 +1,7 @@
-package com.bankofcli.service.port;
+package com.example.service.port;
 
-import com.bankofcli.service.contract.BankContracts.AccountType;
-import com.bankofcli.service.port.BankData.AccountData;
+import com.example.service.contract.BankContracts.AccountType;
+import com.example.service.port.BankData.AccountData;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;

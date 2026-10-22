@@ -1,13 +1,24 @@
-package com.bankofcli.service;
+error id: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/CurrentUserService.java:Transactional#readOnly#
+file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/CurrentUserService.java
+empty definition using pc, found symbol in pc: 
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
 
-import com.bankofcli.service.port.CurrentUserProvider;
-import com.bankofcli.service.port.UserStore;
+offset: 348
+uri: file:///C:/Repos/BankofCLIP2/BankofCLI-SPRING/src/main/java/com/example/service/CurrentUserService.java
+text:
+```scala
+package com.example.service;
+
+import com.example.service.port.CurrentUserProvider;
+import com.example.service.port.UserStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import static com.bankofcli.service.BankServiceException.Code.UNAUTHENTICATED;
+import static com.example.service.BankServiceException.Code.UNAUTHENTICATED;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly@@ = true)
 public class CurrentUserService {
     private final CurrentUserProvider principal;
     private final UserStore users;
@@ -28,3 +39,10 @@ public class CurrentUserService {
         return new BankServiceException(UNAUTHENTICATED, "Please sign in to continue.");
     }
 }
+
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: 
