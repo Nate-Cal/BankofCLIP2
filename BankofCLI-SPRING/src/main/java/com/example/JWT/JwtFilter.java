@@ -1,13 +1,17 @@
 package com.example.JWT;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,8 +23,11 @@ import java.util.List;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+
+    public JwtFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     // Runs once per request — checks for a JWT in the Authorization header
     // If valid, sets the authenticated user in Spring Security's context
@@ -29,26 +36,41 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         // JWTs are categorized as something called "bearer tokens"
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+
             String token = authHeader.substring(7);
 
-            if (jwtUtil.validateToken(token)) {
-                String username = jwtUtil.extractUsername(token);
-                String password = jwtUtil.extractPassword(token);
-                String role = jwtUtil.extractRole(token);
+            try {
+                Claims claims = jwtUtil.parseClaims(token); // parse + verify once
 
-                // Use the role directly as it already includes the ROLE_ prefix
+                AuthUser user = new AuthUser(
+                        claims.get("userId", Integer.class),
+                        claims.getSubject(),
+                        claims.get("role", String.class)
+                );
+
+                // Spring's class is called "UsernamePassword..." but the principal can be anything
+                // Credentials are null - we never carry the password around after login
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                username,
+                                user,
                                 null,
-                                List.of(new SimpleGrantedAuthority(role))
+                                List.of(new SimpleGrantedAuthority("ROLE_" + user.role()))
                         );
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                context.setAuthentication(auth);
+                SecurityContextHolder.setContext(context);
+
+            } catch (JwtException | IllegalArgumentException e) {
+                // Tampered / expired / malformed token -> request stays unauthenticated
+                // Protected endpoints will then answer 401 (see SecurityConfig)
+                SecurityContextHolder.clearContext();
             }
         }
 

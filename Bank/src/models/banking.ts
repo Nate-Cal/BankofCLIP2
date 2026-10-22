@@ -13,7 +13,8 @@ export interface Account {
   id: string;
   userId: string;
   type: AccountType;
-  name: string;
+  firstName: string;
+  lastName: string;
   lastFour: string;
   balanceCents: number;
   currency: string;
@@ -45,7 +46,8 @@ export interface LoginRequest {
 }
 
 export interface RegistrationRequest {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
 }

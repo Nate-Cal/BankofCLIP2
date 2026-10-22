@@ -91,11 +91,10 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
 
         onLogin(response.user)
       } else {
-        const name =
-          `${values.firstName.trim()} ${values.lastName.trim()}`.trim()
-
+      
         await authService.register({
-          name,
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
           email: values.email.trim(),
           password: values.password,
         })
