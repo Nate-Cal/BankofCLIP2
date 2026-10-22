@@ -1,132 +1,115 @@
-import type { BankService, Transaction } from '../models/banking'
-import {
-  currentUser,
-  mockStore,
-  ServiceError,
-  simulateLatency,
-} from './mockStore'
+import type { Account, BankService, DashboardResponse, TransactionRequest } from '../models/banking'
+import { apiRequest } from './apiClient'
+import { apiRoutes } from './apiConfig'
+import { centsToDollars, mapAccounts, mapTransactions } from './apiMappers'
+import { assertCurrentSession, requireSession } from './authSession'
+import type { AuthSession } from './authSession'
+import { ServiceError } from './serviceError'
+
+let pendingMutation: AuthSession | null = null
+let needsRefresh: AuthSession | null = null
+
+async function getAccounts(session: AuthSession): Promise<Account[]> {
+  return mapAccounts(await apiRequest(apiRoutes.accounts, { authenticated: true, session }), session.user.id)
+}
+
+async function readDashboard(session: AuthSession): Promise<DashboardResponse> {
+  const accounts = await getAccounts(session)
+  const lists = await Promise.all(accounts.map(async (account) =>
+    mapTransactions(await apiRequest(apiRoutes.history(account.id), { authenticated: true, session }), account.id),
+  ))
+  assertCurrentSession(session)
+  const transactions = lists.flat()
+  if (new Set(transactions.map((item) => item.id)).size !== transactions.length) {
+    throw new ServiceError('INVALID_API_RESPONSE', 'The server returned duplicate transaction IDs.')
+  }
+  transactions.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id.localeCompare(a.id))
+  return { user: { ...session.user }, accounts, transactions }
+}
+
+function validateRequest(request: TransactionRequest): void {
+  centsToDollars(request.amountCents)
+  if (!['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'].includes(request.type)) {
+    throw new ServiceError('VALIDATION_ERROR', 'Choose a valid transaction type.')
+  }
+  if (!request.accountId?.trim()) throw new ServiceError('ACCOUNT_NOT_FOUND', 'Choose an account.')
+  if (request.type === 'TRANSFER'
+    && (!request.destinationAccountId?.trim() || request.destinationAccountId === request.accountId)) {
+    throw new ServiceError('INVALID_DESTINATION', 'Choose a different destination account.')
+  }
+  if (request.note?.trim()) {
+    throw new ServiceError('NOTES_NOT_SUPPORTED', 'Transaction notes are not available yet. Clear the note to continue.')
+  }
+}
+
+function checkAccounts(request: TransactionRequest, accounts: Account[]): void {
+  const source = accounts.find((account) => account.id === request.accountId)
+  if (!source) throw new ServiceError('ACCOUNT_NOT_FOUND', 'Choose one of your accounts.')
+  if (request.type !== 'DEPOSIT' && source.balanceCents < request.amountCents) {
+    throw new ServiceError('INSUFFICIENT_FUNDS', 'This amount is higher than your available balance.')
+  }
+  const destination = request.type === 'TRANSFER'
+    ? accounts.find((account) => account.id === request.destinationAccountId) : undefined
+  if (request.type === 'TRANSFER' && !destination) {
+    throw new ServiceError('INVALID_DESTINATION', 'Choose one of your other accounts.')
+  }
+  const credited = request.type === 'DEPOSIT' ? source : destination
+  if (credited && !Number.isSafeInteger(credited.balanceCents + request.amountCents)) {
+    throw new ServiceError('INVALID_AMOUNT', 'This amount would exceed the supported balance.')
+  }
+}
 
 export const bankService: BankService = {
   async getDashboard() {
-    await simulateLatency()
-    const user = currentUser()
-    const accounts = mockStore.accounts.filter(
-      (account) => account.userId === user.id,
-    )
-    const accountIds = new Set(accounts.map((account) => account.id))
-    const transactions = mockStore.transactions
-      .filter((transaction) => accountIds.has(transaction.accountId))
-      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-    return structuredClone({ user, accounts, transactions })
+    const session = requireSession()
+    const dashboard = await readDashboard(session)
+    if (needsRefresh === session) needsRefresh = null
+    return dashboard
   },
 
   async submitTransaction(request) {
-    await simulateLatency()
-    const user = currentUser()
-    const account = mockStore.accounts.find(
-      (candidate) =>
-        candidate.id === request.accountId && candidate.userId === user.id,
-    )
-    if (!account)
-      throw new ServiceError(
-        'ACCOUNT_NOT_FOUND',
-        'Please choose one of your accounts.',
-      )
-    if (
-      !Number.isSafeInteger(request.amountCents) ||
-      request.amountCents <= 0
-    ) {
-      throw new ServiceError(
-        'INVALID_AMOUNT',
-        'Enter a valid amount greater than $0.00.',
-      )
+    const session = requireSession()
+    if (pendingMutation === session) throw new ServiceError('TRANSACTION_PENDING', 'A transaction is already in progress.')
+    if (needsRefresh === session) {
+      throw new ServiceError('REFRESH_REQUIRED', 'Sign out and sign in to reload your accounts before submitting again.')
     }
-    if (
-      request.type !== 'DEPOSIT' &&
-      request.type !== 'WITHDRAWAL' &&
-      request.type !== 'TRANSFER'
-    ) {
-      throw new ServiceError(
-        'VALIDATION_ERROR',
-        'Choose a valid transaction type.',
-      )
-    }
-    if (
-      request.type !== 'DEPOSIT' &&
-      request.amountCents > account.balanceCents
-    ) {
-      throw new ServiceError(
-        'INSUFFICIENT_FUNDS',
-        'This amount is higher than your available balance.',
-      )
-    }
-    const destination =
-      request.type === 'TRANSFER'
-        ? mockStore.accounts.find(
-            (candidate) =>
-              candidate.id === request.destinationAccountId &&
-              candidate.userId === user.id,
-          )
-        : undefined
-    if (
-      request.type === 'TRANSFER' &&
-      (!destination || destination.id === account.id)
-    ) {
-      throw new ServiceError(
-        'INVALID_DESTINATION',
-        'Choose a different account to receive the transfer.',
-      )
-    }
-    const creditAccount = request.type === 'DEPOSIT' ? account : destination
-    if (
-      creditAccount &&
-      !Number.isSafeInteger(creditAccount.balanceCents + request.amountCents)
-    ) {
-      throw new ServiceError(
-        'INVALID_AMOUNT',
-        'This amount is too large. Please enter a smaller amount.',
-      )
-    }
-    const createdAt = new Date().toISOString()
-    const direction = request.type === 'DEPOSIT' ? 'CREDIT' : 'DEBIT'
-    const description =
-      request.note?.trim() ||
-      (request.type === 'TRANSFER'
-        ? `Transfer to ${destination!.name}`
-        : request.type === 'DEPOSIT'
-          ? 'Money deposit'
-          : 'Cash withdrawal')
-    const transaction: Transaction = {
-      id: crypto.randomUUID(),
-      accountId: account.id,
-      type: request.type,
-      direction,
-      description,
-      amountCents: request.amountCents,
-      createdAt,
-      status: 'COMPLETED',
-      ...(destination ? { relatedAccountId: destination.id } : {}),
-    }
-    const transactions = [transaction]
-    account.balanceCents +=
-      direction === 'CREDIT' ? request.amountCents : -request.amountCents
-    if (destination) {
-      destination.balanceCents += request.amountCents
-      transactions.push({
-        ...transaction,
-        id: crypto.randomUUID(),
-        accountId: destination.id,
-        direction: 'CREDIT',
-        description: request.note?.trim() || `Transfer from ${account.name}`,
-        relatedAccountId: account.id,
+    validateRequest(request)
+    pendingMutation = session
+    let sent = false
+    let accepted = false
+    try {
+      // This check improves feedback; the server must independently enforce ownership and balances.
+      checkAccounts(request, await getAccounts(session))
+      const params = new URLSearchParams({ amount: centsToDollars(request.amountCents) })
+      if (request.type === 'TRANSFER') params.set('transferAccountId', request.destinationAccountId!)
+      const path = request.type === 'DEPOSIT' ? apiRoutes.deposit(request.accountId)
+        : request.type === 'WITHDRAWAL' ? apiRoutes.withdraw(request.accountId) : apiRoutes.transfer(request.accountId)
+      sent = true
+      const message = await apiRequest(`${path}?${params}`, {
+        method: 'PUT', authenticated: true, session, responseType: 'text',
       })
+      // The legacy API also returns business failures as HTTP 200 text. Do not report those as success.
+      if (typeof message !== 'string' || !/\b(?:was|is) successful\b/i.test(message)) {
+        if (typeof message === 'string' && /unable|cannot|invalid|insufficient|unsuccessful|not found/i.test(message)) {
+          throw new ServiceError('TRANSACTION_REJECTED', message)
+        }
+        throw new ServiceError('INVALID_API_RESPONSE', 'The server did not confirm the transaction.')
+      }
+      accepted = true
+      const dashboard = await readDashboard(session)
+      // Return the authoritative full history. App replaces its previous history with this response.
+      return { accounts: dashboard.accounts, transactions: dashboard.transactions }
+    } catch (error) {
+      const uncertain = accepted || (sent && (error instanceof ServiceError)
+        && (['NETWORK_ERROR', 'REQUEST_TIMEOUT', 'INVALID_API_RESPONSE'].includes(error.code) || error.status >= 500))
+      if (uncertain) {
+        needsRefresh = session
+        throw new ServiceError('TRANSACTION_STATUS_UNKNOWN',
+          'The transaction may have completed. Sign out and sign in to check your activity before submitting again.')
+      }
+      throw error
+    } finally {
+      if (pendingMutation === session) pendingMutation = null
     }
-    mockStore.transactions.unshift(...transactions)
-    return structuredClone({
-      accounts: mockStore.accounts.filter(
-        (candidate) => candidate.userId === user.id,
-      ),
-      transactions,
-    })
   },
 }

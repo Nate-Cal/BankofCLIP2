@@ -5,7 +5,6 @@ import { authService } from '../services/authService'
 import { Brand, Button, Input } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { handleTabNavigation } from '../utils/tabs'
-import { currentYear } from '../utils/format'
 
 interface AuthPageProps {
   onLogin: (user: User) => void

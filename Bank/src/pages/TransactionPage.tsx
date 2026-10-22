@@ -252,13 +252,14 @@ export function TransactionPage({
                   ))}
                 </div>
                 <Input
-                  label="Note (optional)"
+                  label="Note (unavailable)"
                   name="note"
-                  placeholder="What's this transaction for?"
+                  placeholder="Notes are not currently available"
+                  disabled
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   maxLength={80}
-                  hint="Up to 80 characters."
+                  hint="Your transaction will still appear in your activity."
                 />
               </fieldset>
               {serverError && (
@@ -328,9 +329,6 @@ export function TransactionPage({
               completed.
             </p>
           </div>
-          <span className="summary-preview-label">
-            Preview with sample data
-          </span>
         </aside>
       </div>
     </>

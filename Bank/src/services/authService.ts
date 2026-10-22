@@ -1,76 +1,48 @@
-import type { Account, AuthService, User } from '../models/banking'
-import { mockStore, ServiceError, simulateLatency } from './mockStore'
+import type { AuthService } from '../models/banking'
+import { apiRequest } from './apiClient'
+import { apiRoutes } from './apiConfig'
+import { mapUser, objectValue } from './apiMappers'
+import { clearSession, startSession } from './authSession'
+import { ServiceError } from './serviceError'
 
-export { demoCredentials } from './mockStore'
+let authAttempt = 0
 
 export const authService: AuthService = {
   async login({ userId, pin }) {
-    await simulateLatency()
-    const user = mockStore.users.find(
-      (candidate) =>
-        candidate.userId.toLowerCase() === userId.trim().toLowerCase(),
-    )
-    if (!user || mockStore.credentials.get(user.id) !== pin) {
-      throw new ServiceError(
-        'INVALID_CREDENTIALS',
-        'That user ID and PIN do not match. Please try again.',
-      )
+    const attempt = ++authAttempt
+    clearSession()
+    if (!userId.trim() || !pin.trim()) {
+      throw new ServiceError('VALIDATION_ERROR', 'Enter your user ID and PIN.')
     }
-    mockStore.currentUserId = user.id
-    return { user: structuredClone(user) }
+    const response = objectValue(await apiRequest(apiRoutes.login, {
+      method: 'POST', body: { email: userId.trim(), password: pin },
+    }))
+    if (attempt !== authAttempt) throw new ServiceError('SESSION_CHANGED', 'Sign-in was cancelled.')
+    const user = mapUser(response)
+    startSession(user, response.token)
+    return { user }
   },
 
   async register({ firstName, lastName, userId, pin }) {
-    await simulateLatency()
-    if (
-      !firstName.trim() ||
-      !lastName.trim() ||
-      !userId.trim() ||
-      !pin.trim()
-    ) {
-      throw new ServiceError(
-        'VALIDATION_ERROR',
-        'Please complete every required field.',
-      )
+    const attempt = ++authAttempt
+    clearSession()
+    if (!firstName.trim() || !lastName.trim() || !userId.trim() || !pin.trim()) {
+      throw new ServiceError('VALIDATION_ERROR', 'Please complete every required field.')
     }
-    if (
-      mockStore.users.some(
-        (user) => user.userId.toLowerCase() === userId.trim().toLowerCase(),
-      )
-    ) {
-      throw new ServiceError(
-        'USER_ID_TAKEN',
-        'That user ID is already in use. Please choose another.',
-      )
-    }
-    const id = crypto.randomUUID()
-    const user: User = {
-      id,
-      userId: userId.trim(),
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-    }
-    const accounts: Account[] = (['CHECKING', 'SAVINGS'] as const).map(
-      (type, index) => ({
-        id: crypto.randomUUID(),
-        userId: id,
-        type,
-        name: type === 'CHECKING' ? 'Everyday Checking' : 'Personal Savings',
-        lastFour: String(
-          1000 + (((mockStore.accounts.length + index) * 137) % 9000),
-        ),
-        balanceCents: 0,
-        currency: 'USD',
-      }),
-    )
-    mockStore.users.push(user)
-    mockStore.credentials.set(id, pin)
-    mockStore.accounts.push(...accounts)
-    // Registration returns to sign-in; it does not open a session.
-    return { user: structuredClone(user) }
+    const response = await apiRequest(apiRoutes.register, {
+      method: 'POST',
+      body: {
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: userId.trim(), password: pin,
+      },
+    })
+    if (attempt !== authAttempt) throw new ServiceError('SESSION_CHANGED', 'Registration response was cancelled.')
+    // The form returns to sign-in. Do not keep a token returned by registration.
+    return { user: mapUser(response) }
   },
 
   logout() {
-    mockStore.currentUserId = null
+    ++authAttempt
+    clearSession()
   },
 }
