@@ -1,132 +1,191 @@
-import type { BankService, Transaction } from '../models/banking'
-import {
-  currentUser,
-  mockStore,
-  ServiceError,
-  simulateLatency,
-} from './mockStore'
 
-export const bankService: BankService = {
-  async getDashboard() {
-    await simulateLatency()
-    const user = currentUser()
-    const accounts = mockStore.accounts.filter(
-      (account) => account.userId === user.id,
+
+import type {
+  Account,
+  DashboardResponse,
+  Transaction,
+  TransactionResponse,
+  TransactionType,
+  User,
+} from '../models/banking'
+import { apiRequest } from './apiClient'
+
+interface BackendAccount {
+  accountId: number | string
+  user?: { userId?: number | string }
+  currencyType?: string
+  accountBalance?: number
+  date?: string
+  type?: string
+  name?: string
+}
+
+interface BackendTransaction {
+  transactionId: number | string
+  account?: { accountId?: number | string }
+  type?: string
+  amount?: string | number
+  date?: string
+  description?: string
+}
+
+function toCents(value: number | string | undefined): number {
+  const amount = Number(value ?? 0)
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0
+}
+
+function mapAccount(account: BackendAccount): Account {
+  const id = String(account.accountId)
+  const balance = Number(account.accountBalance ?? 0)
+
+  return {
+    id,
+    userId: String(account.user?.userId ?? ''),
+    type: account.type?.toUpperCase() === 'SAVINGS'
+      ? 'SAVINGS'
+      : 'CHECKING',
+    name: account.name || `Account ${id}`,
+    lastFour: id.slice(-4).padStart(4, '0'),
+    balanceCents: Math.round(balance * 100),
+    currency: account.currencyType || 'USD',
+  }
+}
+
+function mapTransaction(
+  transaction: BackendTransaction,
+): Transaction {
+  const rawType = (transaction.type || 'DEPOSIT').toUpperCase()
+
+  let type: TransactionType
+  let direction: 'CREDIT' | 'DEBIT'
+
+  if (rawType === 'WITHDRAW' || rawType === 'WITHDRAWAL') {
+    type = 'WITHDRAWAL'
+    direction = 'DEBIT'
+  } else if (rawType === 'TRANSFER_OUT') {
+    type = 'TRANSFER_OUT'
+    direction = 'DEBIT'
+  } else if (rawType === 'TRANSFER_IN') {
+    type = 'TRANSFER_IN'
+    direction = 'CREDIT'
+  } else if (rawType === 'TRANSFER') {
+    type = 'TRANSFER'
+    direction = 'DEBIT'
+  } else {
+    type = 'DEPOSIT'
+    direction = 'CREDIT'
+  }
+
+  const timestamp = transaction.date || new Date().toISOString()
+
+  return {
+    id: String(transaction.transactionId),
+    accountId: String(transaction.account?.accountId ?? ''),
+    type,
+    direction,
+    amountCents: toCents(transaction.amount),
+    description: transaction.description || type.replace('_', ' '),
+    createdAt: timestamp,
+    timestamp,
+    status: 'COMPLETED',
+  }
+}
+
+async function getAccounts(): Promise<Account[]> {
+  const response = await apiRequest<BackendAccount[]>(
+    '/user/accounts',
+    {},
+    true,
+  )
+
+  return response.map(mapAccount)
+}
+
+async function getTransactions(
+  accounts: Account[],
+): Promise<Transaction[]> {
+  const results = await Promise.all(
+    accounts.map(async (account) => {
+      const response = await apiRequest<BackendTransaction[]>(
+        `/transaction/transactions/${encodeURIComponent(account.id)}`,
+        {},
+        true,
+      )
+
+      return response.map(mapTransaction)
+    }),
+  )
+
+  return results
+    .flat()
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime(),
     )
-    const accountIds = new Set(accounts.map((account) => account.id))
-    const transactions = mockStore.transactions
-      .filter((transaction) => accountIds.has(transaction.accountId))
-      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-    return structuredClone({ user, accounts, transactions })
+}
+
+export const bankService = {
+  async getDashboard(): Promise<DashboardResponse> {
+    const savedUser = localStorage.getItem('bankCurrentUser')
+
+    if (!savedUser) {
+      throw new Error('Your session has expired. Please sign in again.')
+    }
+
+    const user = JSON.parse(savedUser) as User
+    const accounts = await getAccounts()
+    const transactions = await getTransactions(accounts)
+
+    return {
+      user,
+      accounts,
+      transactions,
+    }
   },
 
-  async submitTransaction(request) {
-    await simulateLatency()
-    const user = currentUser()
-    const account = mockStore.accounts.find(
-      (candidate) =>
-        candidate.id === request.accountId && candidate.userId === user.id,
-    )
-    if (!account)
-      throw new ServiceError(
-        'ACCOUNT_NOT_FOUND',
-        'Please choose one of your accounts.',
+  async submitTransaction(input: {
+    type: TransactionType
+    accountId: string
+    amountCents: number
+    destinationAccountId?: string
+    note?: string
+  }): Promise<TransactionResponse> {
+    const amount = (input.amountCents / 100).toFixed(2)
+    const accountId = encodeURIComponent(input.accountId)
+
+    if (input.type === 'DEPOSIT') {
+      await apiRequest(
+        `/transaction/deposit/${accountId}?amount=${encodeURIComponent(amount)}`,
+        { method: 'PUT' },
+        true,
       )
-    if (
-      !Number.isSafeInteger(request.amountCents) ||
-      request.amountCents <= 0
-    ) {
-      throw new ServiceError(
-        'INVALID_AMOUNT',
-        'Enter a valid amount greater than $0.00.',
+    } else if (input.type === 'WITHDRAWAL') {
+      await apiRequest(
+        `/transaction/withdraw/${accountId}?amount=${encodeURIComponent(amount)}`,
+        { method: 'PUT' },
+        true,
       )
-    }
-    if (
-      request.type !== 'DEPOSIT' &&
-      request.type !== 'WITHDRAWAL' &&
-      request.type !== 'TRANSFER'
-    ) {
-      throw new ServiceError(
-        'VALIDATION_ERROR',
-        'Choose a valid transaction type.',
+    } else if (input.type === 'TRANSFER') {
+      if (!input.destinationAccountId) {
+        throw new Error('Choose a destination account.')
+      }
+
+      await apiRequest(
+        `/transaction/transfer/${accountId}?transferAccountId=${encodeURIComponent(input.destinationAccountId)}&amount=${encodeURIComponent(amount)}`,
+        { method: 'PUT' },
+        true,
       )
+    } else {
+      throw new Error('Unsupported transaction type.')
     }
-    if (
-      request.type !== 'DEPOSIT' &&
-      request.amountCents > account.balanceCents
-    ) {
-      throw new ServiceError(
-        'INSUFFICIENT_FUNDS',
-        'This amount is higher than your available balance.',
-      )
+
+    const dashboard = await this.getDashboard()
+
+    return {
+      accounts: dashboard.accounts,
+      transactions: dashboard.transactions,
     }
-    const destination =
-      request.type === 'TRANSFER'
-        ? mockStore.accounts.find(
-            (candidate) =>
-              candidate.id === request.destinationAccountId &&
-              candidate.userId === user.id,
-          )
-        : undefined
-    if (
-      request.type === 'TRANSFER' &&
-      (!destination || destination.id === account.id)
-    ) {
-      throw new ServiceError(
-        'INVALID_DESTINATION',
-        'Choose a different account to receive the transfer.',
-      )
-    }
-    const creditAccount = request.type === 'DEPOSIT' ? account : destination
-    if (
-      creditAccount &&
-      !Number.isSafeInteger(creditAccount.balanceCents + request.amountCents)
-    ) {
-      throw new ServiceError(
-        'INVALID_AMOUNT',
-        'This amount is too large. Please enter a smaller amount.',
-      )
-    }
-    const createdAt = new Date().toISOString()
-    const direction = request.type === 'DEPOSIT' ? 'CREDIT' : 'DEBIT'
-    const description =
-      request.note?.trim() ||
-      (request.type === 'TRANSFER'
-        ? `Transfer to ${destination!.name}`
-        : request.type === 'DEPOSIT'
-          ? 'Money deposit'
-          : 'Cash withdrawal')
-    const transaction: Transaction = {
-      id: crypto.randomUUID(),
-      accountId: account.id,
-      type: request.type,
-      direction,
-      description,
-      amountCents: request.amountCents,
-      createdAt,
-      status: 'COMPLETED',
-      ...(destination ? { relatedAccountId: destination.id } : {}),
-    }
-    const transactions = [transaction]
-    account.balanceCents +=
-      direction === 'CREDIT' ? request.amountCents : -request.amountCents
-    if (destination) {
-      destination.balanceCents += request.amountCents
-      transactions.push({
-        ...transaction,
-        id: crypto.randomUUID(),
-        accountId: destination.id,
-        direction: 'CREDIT',
-        description: request.note?.trim() || `Transfer from ${account.name}`,
-        relatedAccountId: account.id,
-      })
-    }
-    mockStore.transactions.unshift(...transactions)
-    return structuredClone({
-      accounts: mockStore.accounts.filter(
-        (candidate) => candidate.userId === user.id,
-      ),
-      transactions,
-    })
   },
 }
+

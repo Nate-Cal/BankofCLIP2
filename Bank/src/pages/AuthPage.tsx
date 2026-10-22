@@ -5,7 +5,6 @@ import { authService } from '../services/authService'
 import { Brand, Button, Input } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { handleTabNavigation } from '../utils/tabs'
-import { currentYear } from '../utils/format'
 
 interface AuthPageProps {
   onLogin: (user: User) => void
@@ -17,15 +16,18 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
   const [values, setValues] = useState({
     firstName: '',
     lastName: '',
-    userId: '',
-    pin: '',
-    confirmPin: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [serverError, setServerError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  function update(field: keyof typeof values, value: string) {
+  function update(
+    field: keyof typeof values,
+    value: string,
+  ) {
     setValues((previous) => ({ ...previous, [field]: value }))
     setErrors((previous) => ({ ...previous, [field]: '' }))
     setServerError('')
@@ -35,38 +37,71 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
     setMode(nextMode)
     setErrors({})
     setServerError('')
-    setValues((previous) => ({ ...previous, pin: '', confirmPin: '' }))
+    setValues((previous) => ({
+      ...previous,
+      password: '',
+      confirmPassword: '',
+    }))
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
     const nextErrors: Record<string, string> = {}
-    if (!values.userId.trim()) nextErrors.userId = 'Enter your user ID.'
-    if (!values.pin.trim()) nextErrors.pin = 'Enter your PIN.'
-    if (mode === 'register') {
-      if (!values.firstName.trim())
-        nextErrors.firstName = 'Enter your first name.'
-      if (!values.lastName.trim()) nextErrors.lastName = 'Enter your last name.'
-      if (!values.confirmPin.trim()) nextErrors.confirmPin = 'Confirm your PIN.'
-      else if (values.pin !== values.confirmPin)
-        nextErrors.confirmPin = 'Your PINs do not match.'
+
+    if (!values.email.trim()) {
+      nextErrors.email = 'Enter your email address.'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      nextErrors.email = 'Enter a valid email address.'
     }
+
+    if (!values.password.trim()) {
+      nextErrors.password = 'Enter your password.'
+    }
+
+    if (mode === 'register') {
+      if (!values.firstName.trim()) {
+        nextErrors.firstName = 'Enter your first name.'
+      }
+
+      if (!values.lastName.trim()) {
+        nextErrors.lastName = 'Enter your last name.'
+      }
+
+      if (!values.confirmPassword.trim()) {
+        nextErrors.confirmPassword = 'Confirm your password.'
+      } else if (values.password !== values.confirmPassword) {
+        nextErrors.confirmPassword = 'Your passwords do not match.'
+      }
+    }
+
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length) return
+
+    if (Object.keys(nextErrors).length > 0) return
+
     setBusy(true)
     setServerError('')
+
     try {
       if (mode === 'login') {
         const response = await authService.login({
-          userId: values.userId,
-          pin: values.pin,
+          email: values.email.trim(),
+          password: values.password,
         })
+
         onLogin(response.user)
       } else {
-        const { firstName, lastName, userId, pin } = values
-        await authService.register({ firstName, lastName, userId, pin })
+        const name =
+          `${values.firstName.trim()} ${values.lastName.trim()}`.trim()
+
+        await authService.register({
+          name,
+          email: values.email.trim(),
+          password: values.password,
+        })
+
         switchMode('login')
-        notify('Account created. Sign in with your new user ID and PIN.')
+        notify('Account created. Sign in with your email and password.')
       }
     } catch (error) {
       setServerError(
@@ -85,19 +120,25 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
         <div className="auth-brand">
           <Brand />
         </div>
+
         <div className="auth-form-card">
           <div className="auth-kicker">
             <span className="kicker-line" />
             PERSONAL BANKING
           </div>
+
           <h1>
-            {mode === 'login' ? 'Welcome back.' : 'Make yourself at home.'}
+            {mode === 'login'
+              ? 'Welcome back.'
+              : 'Make yourself at home.'}
           </h1>
+
           <p className="auth-description">
             {mode === 'login'
               ? 'Sign in to your Bank of CLI account.'
               : 'Create your account to get started.'}
           </p>
+
           <div
             className="auth-tabs"
             role="tablist"
@@ -116,6 +157,7 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
             >
               Sign in
             </button>
+
             <button
               type="button"
               role="tab"
@@ -129,6 +171,7 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
               Create account
             </button>
           </div>
+
           <div
             id="access-panel"
             role="tabpanel"
@@ -151,6 +194,7 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
                       required
                       maxLength={60}
                     />
+
                     <Input
                       label="Last name"
                       name="lastName"
@@ -166,58 +210,66 @@ export function AuthPage({ onLogin, notify }: AuthPageProps) {
                     />
                   </div>
                 )}
+
                 <Input
-                  label="User ID"
-                  name="userId"
-                  autoComplete="username"
-                  placeholder={
-                    mode === 'login' ? 'Enter your user ID' : 'Choose a user ID'
+                  label="Email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email"
+                  value={values.email}
+                  onChange={(event) =>
+                    update('email', event.target.value)
                   }
-                  value={values.userId}
-                  onChange={(event) => update('userId', event.target.value)}
-                  error={errors.userId}
+                  error={errors.email}
                   required
-                  maxLength={60}
+                  maxLength={254}
                 />
+
                 <Input
-                  label="PIN"
-                  name="pin"
+                  label="Password"
+                  name="password"
                   autoComplete={
-                    mode === 'login' ? 'current-password' : 'new-password'
+                    mode === 'login'
+                      ? 'current-password'
+                      : 'new-password'
                   }
                   type="password"
-                  placeholder={
-                    mode === 'login' ? 'Enter your PIN' : 'Choose a PIN'
+                  placeholder="Enter your password"
+                  value={values.password}
+                  onChange={(event) =>
+                    update('password', event.target.value)
                   }
-                  value={values.pin}
-                  onChange={(event) => update('pin', event.target.value)}
-                  error={errors.pin}
+                  error={errors.password}
                   required
                   maxLength={128}
                 />
+
                 {mode === 'register' && (
                   <Input
-                    label="Confirm PIN"
-                    name="confirmPin"
+                    label="Confirm password"
+                    name="confirmPassword"
                     autoComplete="new-password"
                     type="password"
-                    placeholder="Re-enter your PIN"
-                    value={values.confirmPin}
+                    placeholder="Re-enter your password"
+                    value={values.confirmPassword}
                     onChange={(event) =>
-                      update('confirmPin', event.target.value)
+                      update('confirmPassword', event.target.value)
                     }
-                    error={errors.confirmPin}
+                    error={errors.confirmPassword}
                     required
                     maxLength={128}
                   />
                 )}
               </fieldset>
+
               {serverError && (
                 <p className="form-alert" role="alert">
                   <Icon name="info" size={18} />
                   {serverError}
                 </p>
               )}
+
               <Button
                 type="submit"
                 className="full-width auth-submit"
