@@ -1,4 +1,4 @@
-package com.example.BankofCLI.models;
+package com.example.models;
 
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -12,8 +12,9 @@ public class Transaction {
 
     private String accountId;
     private String type; // DEPOSIT, WITHDRAW, TRANSFER
-    private double amount;
-    private String date;
+    @Column (nullable = false, precision = 14, scale = 2)
+    private BigDecimal amount;
+    private Instant date;
     private String description;
 
     public Transaction() {}

@@ -1,4 +1,4 @@
-package com.example.BankofCLI.models;
+package com.example.models;
 
 import jakarta.persistence.*;
 
@@ -9,7 +9,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    private String name;
+    private String firstName;
+
+    private String lastName;
+
+    private String role;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -18,15 +22,19 @@ public class User {
     private String passwordHash;
 
     public User() {}
-    public User(String name, String email, String passwordHash) {
-        this.name = name;
+    public User(String firstName, String lastName, String email, String role, String passwordHash) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.email = email;
+        this.role = role;
         this.passwordHash = passwordHash;
     }
 
     // Getters & Setters
     public String getId() { return id; }
-    public String getName() { return name; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
     public String getEmail() { return email; }
+    public String getRole() { return role; }
     public String getPasswordHash() { return passwordHash; }
 }
