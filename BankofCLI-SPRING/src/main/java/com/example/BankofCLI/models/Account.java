@@ -11,7 +11,7 @@ public class Account {
 
     private String ownerId;
     private String name;
-    private double balance; // Matches your frontend mock JSON (dollars)
+    private double balance;
     private String currency = "USD";
     private String mask;
 
