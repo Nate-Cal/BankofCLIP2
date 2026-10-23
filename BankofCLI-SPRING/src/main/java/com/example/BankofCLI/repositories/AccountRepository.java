@@ -27,4 +27,8 @@ public interface AccountRepository extends JpaRepository<Account, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from Account a where a.id = :id and a.ownerId = :ownerId")
     Optional<Account> lockByIdAndOwnerId(@Param("id") String id, @Param("ownerId") String ownerId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Account a where a.id = :id")
+    Optional<Account> lockById(@Param("id") String id);
 }

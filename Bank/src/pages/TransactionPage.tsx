@@ -43,6 +43,10 @@ export function TransactionPage({
       (account) => account.id !== (initialAccountId || accounts[0]?.id),
     )?.id || '',
   )
+  const [destinationMode, setDestinationMode] = useState<'own' | 'external'>(
+    'own',
+  )
+  const [externalDestinationId, setExternalDestinationId] = useState('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -50,6 +54,8 @@ export function TransactionPage({
   const [busy, setBusy] = useState(false)
   const source = accounts.find((account) => account.id === accountId)
   const destination = accounts.find((account) => account.id === destinationId)
+  const selectedDestinationId =
+    destinationMode === 'own' ? destinationId : externalDestinationId.trim()
   const cents = parseAmount(amount)
   const action = actions.find((candidate) => candidate.type === type)!
   const remaining = source
@@ -84,7 +90,10 @@ export function TransactionPage({
       !Number.isSafeInteger(source.balanceCents + cents)
     )
       nextErrors.amount = 'Enter a smaller amount.'
-    if (type === 'TRANSFER' && (!destination || destination.id === source?.id))
+    if (
+      type === 'TRANSFER' &&
+      (!selectedDestinationId || selectedDestinationId === source?.id)
+    )
       nextErrors.destinationId = 'Choose a different destination account.'
     setErrors(nextErrors)
     setServerError('')
@@ -95,12 +104,14 @@ export function TransactionPage({
         type,
         accountId,
         amountCents: cents,
-        ...(type === 'TRANSFER' ? { destinationAccountId: destinationId } : {}),
+        ...(type === 'TRANSFER'
+          ? { destinationAccountId: selectedDestinationId }
+          : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
       })
       const message =
         type === 'TRANSFER'
-          ? `${formatMoney(cents)} transferred to ${destination!.name}.`
+          ? `${formatMoney(cents)} transferred to ${destination?.name || `account ${selectedDestinationId}`}.`
           : type === 'DEPOSIT'
             ? `${formatMoney(cents)} deposited into ${source!.name}.`
             : `${formatMoney(cents)} withdrawn from ${source!.name}.`
@@ -163,14 +174,14 @@ export function TransactionPage({
           >
             <h2>
               {type === 'TRANSFER'
-                ? 'Transfer between accounts'
+                ? 'Transfer funds'
                 : type === 'DEPOSIT'
                   ? 'Deposit money'
                   : 'Withdraw money'}
             </h2>
             <p className="transaction-description">
               {type === 'TRANSFER'
-                ? 'Choose where your money goes.'
+                ? 'Choose one of your accounts or enter a destination account ID.'
                 : type === 'DEPOSIT'
                   ? 'Select an account and the amount to add.'
                   : 'Select an account and the amount to withdraw.'}
@@ -200,27 +211,73 @@ export function TransactionPage({
                   </p>
                 )}
                 {type === 'TRANSFER' && (
-                  <Select
-                    label="To account"
-                    value={destinationId}
-                    onChange={(event) => {
-                      setDestinationId(event.target.value)
-                      clearErrors()
-                    }}
-                    error={errors.destinationId}
-                    required
-                  >
-                    <option value="" disabled>
-                      Choose an account
-                    </option>
-                    {accounts
-                      .filter((account) => account.id !== accountId)
-                      .map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name} · •• {account.lastFour}
+                  <>
+                    <div
+                      className="destination-mode"
+                      role="group"
+                      aria-label="Destination account type"
+                    >
+                      <button
+                        type="button"
+                        aria-pressed={destinationMode === 'own'}
+                        onClick={() => {
+                          setDestinationMode('own')
+                          clearErrors()
+                        }}
+                      >
+                        My accounts
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={destinationMode === 'external'}
+                        onClick={() => {
+                          setDestinationMode('external')
+                          clearErrors()
+                        }}
+                      >
+                        Account ID
+                      </button>
+                    </div>
+                    {destinationMode === 'own' ? (
+                      <Select
+                        label="To account"
+                        value={destinationId}
+                        onChange={(event) => {
+                          setDestinationId(event.target.value)
+                          clearErrors()
+                        }}
+                        error={errors.destinationId}
+                        required
+                      >
+                        <option value="" disabled>
+                          Choose an account
                         </option>
-                      ))}
-                  </Select>
+                        {accounts
+                          .filter((account) => account.id !== accountId)
+                          .map((account) => (
+                            <option key={account.id} value={account.id}>
+                              {account.name} · •• {account.lastFour}
+                            </option>
+                          ))}
+                      </Select>
+                    ) : (
+                      <Input
+                        label="Destination account ID"
+                        name="destinationAccountId"
+                        placeholder="Enter account ID"
+                        value={externalDestinationId}
+                        onChange={(event) => {
+                          setExternalDestinationId(event.target.value)
+                          clearErrors()
+                        }}
+                        error={errors.destinationId}
+                        hint="For an account at Bank of CLI."
+                        autoComplete="off"
+                        maxLength={80}
+                        required
+                      />
+                    )}
+                  </>
                 )}
                 <Input
                   label="Amount"
@@ -300,9 +357,17 @@ export function TransactionPage({
               <div>
                 <dt>To</dt>
                 <dd>
-                  {destination?.name || 'Choose an account'}
+                  {destinationMode === 'own'
+                    ? destination?.name || 'Choose an account'
+                    : externalDestinationId.trim() || 'Enter an account ID'}
                   <span>
-                    {destination ? `•••• ${destination.lastFour}` : ''}
+                    {destinationMode === 'own'
+                      ? destination
+                        ? `•••• ${destination.lastFour}`
+                        : ''
+                      : externalDestinationId.trim()
+                        ? 'Account ID'
+                        : ''}
                   </span>
                 </dd>
               </div>

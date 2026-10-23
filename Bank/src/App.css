@@ -1155,6 +1155,29 @@ input::placeholder {
   color: var(--muted);
   margin-bottom: 27px;
 }
+.destination-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 19px;
+  padding: 4px;
+  border-radius: 7px;
+  background: #edf3f1;
+}
+.destination-mode button {
+  min-height: 39px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #52665d;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.destination-mode button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--green-dark);
+  box-shadow: 0 1px 3px #172c3a1a;
+}
 .available-balance {
   display: flex;
   justify-content: space-between;

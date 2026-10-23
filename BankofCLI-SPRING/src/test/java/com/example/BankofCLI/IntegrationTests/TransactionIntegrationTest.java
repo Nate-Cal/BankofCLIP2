@@ -138,15 +138,13 @@ class TransactionIntegrationTest {
     }
 
     @Test
-    void transferToAnotherCustomersAccountIsRejected() {
-        BankServiceException error = assertThrows(BankServiceException.class,
-                () -> service.transfer(checking.getId(), foreignAccount.getId(), new BigDecimal("25.00")));
+    void transferToAnotherCustomersAccountPersistsBothBalancesAndHistory() {
+        assertTrue(service.transfer(checking.getId(), foreignAccount.getId(), new BigDecimal("25.00")).success());
 
-        assertEquals(ACCOUNT_NOT_FOUND, error.getCode());
-        assertBalance(checking, "100.00");
-        assertBalance(foreignAccount, "200.00");
-        assertTrue(history(checking).isEmpty());
-        assertTrue(history(foreignAccount).isEmpty());
+        assertBalance(checking, "75.00");
+        assertBalance(foreignAccount, "225.00");
+        assertHistory(checking, "TRANSFER_OUT", "25.00");
+        assertHistory(foreignAccount, "TRANSFER_IN", "25.00");
     }
 
     @Test

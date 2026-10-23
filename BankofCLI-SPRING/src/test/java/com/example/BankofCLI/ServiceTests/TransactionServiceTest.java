@@ -63,13 +63,14 @@ class TransactionServiceTest {
         when(currentUser.requireUserId()).thenReturn("user-1");
         when(accounts.lockOwnedById("checking", "user-1"))
                 .thenReturn(Optional.of(account("checking", "100.00")));
-        when(accounts.lockOwnedById("savings", "user-1"))
+        when(accounts.lockById("savings"))
                 .thenReturn(Optional.of(account("savings", "50.00")));
 
         assertTrue(service.transfer("checking", "savings", new BigDecimal("25.00")).success());
 
         verify(accounts).updateBalance("checking", new BigDecimal("75.00"));
         verify(accounts).updateBalance("savings", new BigDecimal("75.00"));
+        verify(accounts).lockById("savings");
         verify(transactions).record(eq("checking"), eq("TRANSFER_OUT"), eq(new BigDecimal("25.00")),
                 any(Instant.class), eq("Transfer to savings"));
         verify(transactions).record(eq("savings"), eq("TRANSFER_IN"), eq(new BigDecimal("25.00")),

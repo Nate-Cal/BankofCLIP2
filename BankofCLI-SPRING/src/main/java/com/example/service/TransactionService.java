@@ -49,7 +49,7 @@ public class TransactionService {
         return new OperationResponse(true);
     }
 
-    /** Transfers between the customer's own accounts, matching the frontend's account selector. */
+    /** Transfers between the customer's accounts or to another account in the bank. */
     public OperationResponse transfer(String sourceId, String destinationId, BigDecimal dollarAmount) {
         String userId = currentUser.requireUserId();
         BigDecimal amount = Money.amount(dollarAmount);
@@ -63,9 +63,9 @@ public class TransactionService {
         AccountData destination;
         if (sourceId.compareTo(destinationId) < 0) {
             source = lock(sourceId, userId);
-            destination = lock(destinationId, userId);
+            destination = lockDestination(destinationId);
         } else {
-            destination = lock(destinationId, userId);
+            destination = lockDestination(destinationId);
             source = lock(sourceId, userId);
         }
 
@@ -100,6 +100,12 @@ public class TransactionService {
         AccountService.requireAccountId(accountId);
         AccountData account = accounts.lockOwnedById(accountId, userId).orElseThrow(AccountService::notFound);
         AccountService.verifyOwnership(account, accountId, userId);
+        return account;
+    }
+
+    private AccountData lockDestination(String accountId) {
+        AccountData account = accounts.lockById(accountId).orElseThrow(AccountService::notFound);
+        if (!accountId.equals(account.accountId())) throw AccountService.notFound();
         return account;
     }
 
