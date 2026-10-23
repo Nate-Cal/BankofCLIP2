@@ -42,6 +42,8 @@ class AccountServiceTest {
     @Test
     void missingOrForeignAccountHasSameNotFoundError() {
         when(currentUser.requireUserId()).thenReturn("user-1");
+        // Strict Mockito rejects calls whose arguments weren't stubbed, so stub the "missing" lookup too
+        when(accounts.findOwnedById("missing", "user-1")).thenReturn(Optional.empty());
         when(accounts.findOwnedById("foreign", "user-1"))
                 .thenReturn(Optional.of(account("foreign", "user-2", AccountType.CHECKING)));
 

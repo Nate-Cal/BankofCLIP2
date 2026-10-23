@@ -35,7 +35,7 @@ public class TransactionController {
 		
 		return ResponseEntity.noContent().build();
 	}
-	@PutMapping("/withdraw{accountId}")
+	@PutMapping("/withdraw/{accountId}")
 	public ResponseEntity<?> withdraw(@PathVariable String accountId,@RequestParam(required = true) BigDecimal amount){
 		tranService.withdraw(accountId, amount);
 		return ResponseEntity.noContent().build();

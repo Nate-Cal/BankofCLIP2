@@ -172,7 +172,7 @@ export const bankService = {
       }
 
       await apiRequest(
-        `/transaction/transfer/${accountId}?transferAccountId=${encodeURIComponent(input.destinationAccountId)}&amount=${encodeURIComponent(amount)}`,
+        `/transaction/transfer/${accountId}?destinationAccountId=${encodeURIComponent(input.destinationAccountId)}&amount=${encodeURIComponent(amount)}`,
         { method: 'PUT' },
         true,
       )
