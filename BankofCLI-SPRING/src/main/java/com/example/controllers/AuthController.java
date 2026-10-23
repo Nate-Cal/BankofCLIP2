@@ -28,6 +28,7 @@ public class AuthController {
 		this.auth = auth;
 	}
 
+	@PostMapping({"", "/login"})
 	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest dto){
 		
 		AuthResponse loggedin = auth.login(dto);

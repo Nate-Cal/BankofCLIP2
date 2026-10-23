@@ -11,17 +11,23 @@ public class Transaction {
     private String id;
 
     private String accountId;
-    private String type; // DEPOSIT, WITHDRAW, TRANSFER
+    private String type; // DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT
     private double amount;
-    private String date;
+    private String date; // ISO-8601 instant, e.g. 2026-10-23T15:00:00Z
     private String description;
 
     public Transaction() {}
+
     public Transaction(String accountId, String type, double amount, String description) {
+        this(accountId, type, amount, Instant.now(), description);
+    }
+
+    // Used by JpaTransactionStore: both halves of a transfer share the same timestamp
+    public Transaction(String accountId, String type, double amount, Instant date, String description) {
         this.accountId = accountId;
         this.type = type;
         this.amount = amount;
-        this.date = Instant.now().toString();
+        this.date = date.toString();
         this.description = description;
     }
 
