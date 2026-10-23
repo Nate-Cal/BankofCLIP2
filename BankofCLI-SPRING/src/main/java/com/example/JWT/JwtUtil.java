@@ -1,6 +1,7 @@
-package com.example.JWT;
+package com.example.jwt;
 
-import com.example.MODELS.User;
+import com.example.service.contract.BankContracts.UserIdentity;
+import com.example.service.port.TokenIssuer;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,7 +16,7 @@ import java.util.Date;
 //This Class is responsible for generating and reading JWTs
 
 @Component
-public class JwtUtil {
+public class JwtUtil implements TokenIssuer{
 
     private static final String ISSUER = "bankofcli";
 
@@ -32,12 +33,13 @@ public class JwtUtil {
 
     // Generates a signed JWT: subject = email, plus role and userId as custom claims
     // NEVER put a password in a token - the payload is only base64, anyone can read it
-    public String generateToken(User user) {
+    @Override
+    public String generateToken(UserIdentity user) {
         Date now = new Date();
         return Jwts.builder()
-                .setSubject(user.getEmail())          //who the user is
-                .claim("role", user.getRole())        //claims are just other pieces of info
-                .claim("userId", user.getUserId())
+                .setSubject(user.email())          //who the user is
+                .claim("role", user.role())        //claims are just other pieces of info
+                .claim("userId", user.userId())
                 .setIssuer(ISSUER)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationMs))

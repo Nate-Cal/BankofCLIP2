@@ -1,4 +1,4 @@
-package com.example.JWT;
+package com.example.jwt;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;

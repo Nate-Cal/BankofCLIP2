@@ -1,4 +1,4 @@
-package com.example.JWT;
+package com.example.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -48,7 +48,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 Claims claims = jwtUtil.parseClaims(token); // parse + verify once
 
                 AuthUser user = new AuthUser(
-                        claims.get("userId", Integer.class),
+                        claims.get("userId", String.class),
                         claims.getSubject(),
                         claims.get("role", String.class)
                 );
