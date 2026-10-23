@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan("com.example")
-@EntityScan("com.example.MODELS")
-@EnableJpaRepositories("com.example.REPOSITORIES")
+@EntityScan("com.example.BankofCLI.models")
+@EnableJpaRepositories("com.example.BankofCLI.repositories")
 public class BankofCliApplication {
 
 	public static void main(String[] args) {

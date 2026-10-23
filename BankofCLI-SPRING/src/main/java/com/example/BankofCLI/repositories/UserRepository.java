@@ -9,9 +9,8 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
 
-    //Use this for validating if email is unique and distinct.
+    // Used for login and for rejecting duplicate emails at registration.
+    // (No findByEmailAndPassword: passwords are BCrypt hashes, so AuthService
+    //  compares them with PasswordEncoder.matches, not in SQL.)
     Optional<User> findByEmail(String email);
-
-    //Use this in the login method.
-    Optional<User> findByEmailAndPassword(String email, String Password);
 }

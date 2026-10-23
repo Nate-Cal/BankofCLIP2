@@ -47,7 +47,9 @@ public class JwtFilter extends OncePerRequestFilter {
             try {
                 Claims claims = jwtUtil.parseClaims(token); // parse + verify once
 
-                AuthUser user = new AuthUser(claims.getSubject(),claims.get("Id", String.class));
+                // AuthUser is (userId, email): the id comes from the "Id" claim, the email is the subject
+                AuthUser user = new AuthUser(claims.get("Id", String.class), claims.getSubject());
+                String role = claims.get("role", String.class);
 
                 // Spring's class is called "UsernamePassword..." but the principal can be anything
                 // Credentials are null - we never carry the password around after login
@@ -55,7 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(
                                 user,
                                 null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + user.email()))
+                                List.of(new SimpleGrantedAuthority("ROLE_" + (role == null ? "USER" : role)))
                         );
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
