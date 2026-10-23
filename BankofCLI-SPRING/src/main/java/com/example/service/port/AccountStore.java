@@ -14,9 +14,12 @@ public interface AccountStore {
     /** Obtain a database write lock, held until the enclosing service transaction ends. */
     Optional<AccountData> lockOwnedById(String accountId, String userId);
 
+    /** Lock an account by ID, including accounts owned by another user. */
+    Optional<AccountData> lockById(String accountId);
+
     /** Create a USD account with a zero balance in the current registration transaction. */
     AccountData create(String userId, String name, AccountType type);
 
-    /** Called only after lockOwnedById, in the same transaction. Fail if the row is missing. */
+    /** Called only after locking the account, in the same transaction. Fail if the row is missing. */
     void updateBalance(String accountId, BigDecimal newBalance);
 }

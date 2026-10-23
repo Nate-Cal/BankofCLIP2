@@ -41,13 +41,18 @@ public class JpaAccountStore implements AccountStore {
     }
 
     @Override
+    public Optional<AccountData> lockById(String accountId) {
+        return accounts.lockById(accountId).map(JpaAccountStore::toData);
+    }
+
+    @Override
     public AccountData create(String userId, String name, AccountType type) {
         return toData(accounts.save(new Account(userId, name, type)));
     }
 
     @Override
     public void updateBalance(String accountId, BigDecimal newBalance) {
-        // The row was already loaded and locked by lockOwnedById in this same transaction,
+        // The row was already loaded and locked in this same transaction,
         // so this returns that managed entity; the change is written when the transaction commits
         Account account = accounts.findById(accountId)
                 .orElseThrow(() -> new IllegalStateException("Account " + accountId + " no longer exists."));
